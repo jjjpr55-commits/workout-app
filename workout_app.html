@@ -1,0 +1,382 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Workout">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="theme-color" content="#0c0c10">
+<title>My Workout</title>
+<style>
+*, *::before, *::after { margin:0; padding:0; box-sizing:border-box; -webkit-tap-highlight-color:transparent; }
+html { height:-webkit-fill-available; }
+body {
+  background:#0c0c10; color:#eeeef5;
+  font-family:-apple-system, BlinkMacSystemFont, 'Helvetica Neue', Arial, sans-serif;
+  min-height:100vh; min-height:-webkit-fill-available;
+  overflow-x:hidden;
+}
+body::before {
+  content:''; position:fixed; inset:0;
+  background-image:
+    linear-gradient(rgba(255,255,255,.04) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(255,255,255,.04) 1px, transparent 1px);
+  background-size:52px 52px;
+  pointer-events:none; z-index:0;
+}
+.page {
+  max-width:860px; margin:0 auto;
+  padding: max(40px, env(safe-area-inset-top)) max(16px, env(safe-area-inset-right)) calc(env(safe-area-inset-bottom) + 60px) max(16px, env(safe-area-inset-left));
+  position:relative; z-index:1;
+}
+
+/* HEADER */
+.badge {
+  display:inline-flex; align-items:center; gap:6px;
+  background:rgba(200,255,71,.1); border:1px solid rgba(200,255,71,.25);
+  border-radius:99px; padding:5px 12px;
+  font-size:10px; font-weight:700; letter-spacing:3px; text-transform:uppercase;
+  color:#c8ff47; margin-bottom:16px;
+}
+.badge::before { content:'●'; font-size:7px; }
+h1 { font-size:clamp(48px,12vw,100px); font-weight:900; line-height:.88; color:#fff; }
+h1 em {
+  display:block; font-style:normal;
+  background:linear-gradient(90deg,#c8ff47,#47b8ff);
+  -webkit-background-clip:text; -webkit-text-fill-color:transparent; background-clip:text;
+}
+.header { margin-bottom:36px; }
+.header p { margin-top:14px; font-size:13px; color:#5a5a72; line-height:1.6; max-width:420px; }
+.header p b { color:#eeeef5; }
+
+/* INSTALL BANNER */
+.install-banner {
+  display:none; align-items:flex-start; gap:12px;
+  background:linear-gradient(135deg,rgba(200,255,71,.1),rgba(71,184,255,.07));
+  border:1px solid rgba(200,255,71,.3); border-radius:14px;
+  padding:14px 16px; margin-bottom:24px;
+}
+.install-banner.show { display:flex; }
+.install-icon { font-size:24px; line-height:1; flex-shrink:0; margin-top:2px; }
+.install-text { flex:1; }
+.install-text strong { display:block; font-size:13px; color:#c8ff47; margin-bottom:3px; }
+.install-text span { font-size:12px; color:#5a5a72; line-height:1.5; }
+.install-close {
+  background:none; border:none; color:#5a5a72; font-size:18px; cursor:pointer;
+  min-width:36px; min-height:36px; display:flex; align-items:center; justify-content:center;
+}
+
+/* TABS */
+.tabs { display:grid; grid-template-columns:repeat(4,1fr); gap:8px; margin-bottom:28px; }
+@media(max-width:480px){ .tabs{ grid-template-columns:repeat(2,1fr); } }
+.tab {
+  background:#14141c; border:2px solid #252535; border-radius:12px; padding:12px 8px;
+  cursor:pointer; text-align:center; -webkit-user-select:none; user-select:none;
+}
+.tab:active { opacity:.7; }
+.tab.on { background:#c8ff47; border-color:#c8ff47; }
+.tab-l { display:block; font-size:26px; font-weight:900; line-height:1; color:#eeeef5; }
+.tab.on .tab-l { color:#000; }
+.tab-n { display:block; margin-top:3px; font-size:9px; font-weight:700; letter-spacing:1px; text-transform:uppercase; color:#5a5a72; }
+.tab.on .tab-n { color:rgba(0,0,0,.6); }
+
+/* PANELS */
+.panel { display:none; }
+.panel.on { display:block; }
+.panel-head {
+  display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:10px;
+  margin-bottom:20px; padding-bottom:18px; border-bottom:1px solid #252535;
+}
+.panel-title { font-size:38px; font-weight:900; }
+.panel-tag {
+  background:rgba(71,184,255,.1); border:1px solid rgba(71,184,255,.2);
+  border-radius:99px; padding:5px 12px; font-size:10px; font-weight:700;
+  letter-spacing:2px; text-transform:uppercase; color:#47b8ff;
+}
+.panel-sub { font-size:12px; color:#5a5a72; margin-top:3px; }
+.panel-sub b { color:#47b8ff; }
+
+/* EXERCISE CARDS */
+.ex-list { display:flex; flex-direction:column; gap:8px; }
+.ex-card { background:#14141c; border:1px solid #252535; border-radius:14px; overflow:hidden; }
+.ex-main { display:flex; align-items:center; gap:12px; padding:14px 16px; }
+.ex-n { font-size:22px; font-weight:900; color:#252535; min-width:32px; flex-shrink:0; }
+.ex-info { flex:1; min-width:0; }
+.ex-name { font-size:15px; font-weight:700; color:#eeeef5; margin-bottom:2px; word-break:break-word; }
+.ex-muscle { font-size:10px; font-weight:700; letter-spacing:1.5px; text-transform:uppercase; color:#5a5a72; }
+.ex-btns { display:flex; align-items:center; gap:8px; flex-shrink:0; }
+
+.btn-edit {
+  background:#1e1e2a; border:1px solid #252535; color:#5a5a72;
+  width:44px; height:44px; border-radius:10px; cursor:pointer; font-size:15px;
+  display:flex; align-items:center; justify-content:center; flex-shrink:0;
+  -webkit-user-select:none; user-select:none;
+}
+.btn-edit:active { background:#252535; color:#c8ff47; }
+
+.btn-watch {
+  display:inline-flex; align-items:center; gap:5px;
+  background:#1e1e2a; border:1px solid #252535; color:#5a5a72;
+  padding:0 16px; height:44px; border-radius:99px;
+  text-decoration:none; font-size:11px; font-weight:700;
+  letter-spacing:1px; text-transform:uppercase; white-space:nowrap; flex-shrink:0;
+}
+.btn-watch:active { background:#c8ff47; border-color:#c8ff47; color:#000; }
+.btn-watch svg { width:11px; height:11px; flex-shrink:0; }
+
+.ex-stats { display:flex; flex-wrap:wrap; gap:6px; padding:0 16px 12px 60px; }
+.pill {
+  display:inline-flex; align-items:center; gap:5px;
+  background:rgba(255,255,255,.03); border:1px solid #252535; border-radius:99px;
+  padding:4px 10px; font-size:11px; font-weight:600; color:#eeeef5;
+}
+.pill-lbl { font-size:9px; font-weight:700; letter-spacing:1px; text-transform:uppercase; color:#5a5a72; }
+.note-pill { background:rgba(200,255,71,.05); border-color:rgba(200,255,71,.15); color:#5a5a72; font-size:10px; max-width:220px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+
+/* DRAWER */
+.ex-drawer { display:none; background:#1a1a25; border-top:1px solid #252535; padding:14px 16px 18px; }
+.ex-drawer.open { display:block; }
+.drawer-lbl { font-size:9px; font-weight:700; letter-spacing:2px; text-transform:uppercase; color:#c8ff47; margin-bottom:12px; }
+.drawer-grid { display:grid; grid-template-columns:1fr 1fr; gap:10px; }
+.df label { display:block; font-size:9px; font-weight:700; letter-spacing:1.5px; text-transform:uppercase; color:#5a5a72; margin-bottom:5px; }
+.df input, .df textarea {
+  width:100%; background:#0c0c10; border:1px solid #252535; border-radius:8px;
+  padding:9px 10px; color:#eeeef5; font-family:inherit;
+  /* 16px prevents iOS zoom on input focus */
+  font-size:16px; font-weight:600; outline:none;
+}
+.df textarea { resize:vertical; min-height:52px; font-size:14px; }
+.df input:focus, .df textarea:focus { border-color:#c8ff47; }
+.df-full { grid-column:1/-1; }
+.btn-save {
+  margin-top:12px; background:#c8ff47; border:none; border-radius:99px;
+  padding:10px 22px; color:#000; font-family:inherit; font-size:13px; font-weight:800;
+  letter-spacing:1.5px; text-transform:uppercase; cursor:pointer; min-height:44px;
+  display:inline-block;
+}
+.btn-save:active { opacity:.8; }
+
+@media(max-width:520px){
+  .ex-main { flex-wrap:wrap; gap:8px; }
+  .ex-btns { width:100%; justify-content:space-between; }
+  .btn-watch { flex:1; justify-content:center; }
+  .ex-stats { padding-left:16px; }
+}
+
+footer { text-align:center; margin-top:48px; font-size:11px; color:#3a3a4a; line-height:2; }
+footer a { color:#47b8ff; text-decoration:none; }
+</style>
+</head>
+<body>
+<div class="page">
+
+  <div class="install-banner" id="ib">
+    <div class="install-icon">📲</div>
+    <div class="install-text">
+      <strong>Add to iPhone Home Screen</strong>
+      <span>Open in <b style="color:#eeeef5">Safari</b> → tap <b style="color:#eeeef5">Share ⎙</b> → tap <b style="color:#eeeef5">"Add to Home Screen"</b></span>
+    </div>
+    <button class="install-close" id="ibc">✕</button>
+  </div>
+
+  <div class="header">
+    <div class="badge">Personal Workout Plan</div>
+    <h1>MY<br><em>WORKOUT</em></h1>
+    <p>Tap <b>▶ Watch</b> to open the exercise on MuscleWiki.<br>Tap <b>✏</b> to customize sets, reps and notes.</p>
+  </div>
+
+  <div class="tabs" id="tabs">
+    <button class="tab on" data-tab="a" type="button">
+      <span class="tab-l">A</span><span class="tab-n">Chest &amp; Biceps</span>
+    </button>
+    <button class="tab" data-tab="b" type="button">
+      <span class="tab-l">B</span><span class="tab-n">Legs</span>
+    </button>
+    <button class="tab" data-tab="c" type="button">
+      <span class="tab-l">C</span><span class="tab-n">Back &amp; Triceps</span>
+    </button>
+    <button class="tab" data-tab="d" type="button">
+      <span class="tab-l">D</span><span class="tab-n">Shoulders &amp; Abs</span>
+    </button>
+  </div>
+
+  <div class="panel on" id="panel-a">
+    <div class="panel-head">
+      <div><div class="panel-title">Session A</div><div class="panel-sub"><b>Chest</b> · <b>Biceps</b> — 6 exercises</div></div>
+      <div class="panel-tag">Push + Curl Day</div>
+    </div>
+    <div class="ex-list" id="list-a"></div>
+  </div>
+
+  <div class="panel" id="panel-b">
+    <div class="panel-head">
+      <div><div class="panel-title">Session B</div><div class="panel-sub"><b>Quadriceps</b> · <b>Hamstrings</b> · <b>Calves</b> — 5 exercises</div></div>
+      <div class="panel-tag">Leg Day</div>
+    </div>
+    <div class="ex-list" id="list-b"></div>
+  </div>
+
+  <div class="panel" id="panel-c">
+    <div class="panel-head">
+      <div><div class="panel-title">Session C</div><div class="panel-sub"><b>Back</b> · <b>Triceps</b> — 6 exercises</div></div>
+      <div class="panel-tag">Pull + Press Day</div>
+    </div>
+    <div class="ex-list" id="list-c"></div>
+  </div>
+
+  <div class="panel" id="panel-d">
+    <div class="panel-head">
+      <div><div class="panel-title">Session D</div><div class="panel-sub"><b>Shoulders</b> · <b>Abs</b> — 6 exercises</div></div>
+      <div class="panel-tag">Delt + Core Day</div>
+    </div>
+    <div class="ex-list" id="list-d"></div>
+  </div>
+
+  <footer>
+    Exercise guides on <a href="https://musclewiki.com" target="_blank">MuscleWiki.com</a><br>
+    Sets &amp; reps are saved automatically in this browser.
+  </footer>
+</div>
+
+<script>
+var DATA = {
+  a:[
+    {name:"Machine Chest Press",          muscle:"Chest · Pectoralis Major",        sets:4, reps:"8-12",   url:"https://musclewiki.com/exercise/machine-chest-press"},
+    {name:"Smith Machine Incline Press",  muscle:"Upper Chest · Anterior Deltoid",  sets:4, reps:"8-12",   url:"https://musclewiki.com/exercise/smith-machine-incline-bench-press"},
+    {name:"Low Cable Crossover",          muscle:"Chest · Upper Pec",               sets:3, reps:"12-15",  url:"https://musclewiki.com/it-it/exercise/cable-decline-bench-press"},
+    {name:"Cable Bayesian Curl",          muscle:"Biceps · Long Head",              sets:3, reps:"10-14",  url:"https://musclewiki.com/it-it/exercise/cable-single-arm-bayesian-curl"},
+    {name:"Dumbbell Spider Curl",         muscle:"Biceps · Peak Contraction",       sets:3, reps:"10-12",  url:"https://musclewiki.com/dumbbells/male/biceps/dumbbell-spider-curl"},
+    {name:"Cable Rope Hammer Curl",       muscle:"Brachialis · Brachioradialis",    sets:3, reps:"12-15",  url:"https://musclewiki.com/exercise/cable-rope-hammer-curl"}
+  ],
+  b:[
+    {name:"Machine Hack Squat",             muscle:"Quadriceps · Glutes",              sets:4, reps:"8-12",   url:"https://musclewiki.com/exercise/machine-hack-squat"},
+    {name:"Dumbbell Romanian Deadlift",     muscle:"Hamstrings · Glutes · Lower Back", sets:4, reps:"10-12",  url:"https://musclewiki.com/exercise/dumbbell-romanian-deadlift"},
+    {name:"Dumbbell Bulgarian Split Squat", muscle:"Quads · Glutes · Balance",         sets:3, reps:"10/side",url:"https://musclewiki.com/exercise/bulgarian-split-squat"},
+    {name:"Seated Leg Curl",                muscle:"Hamstrings · Biceps Femoris",      sets:4, reps:"12-15",  url:"https://musclewiki.com/exercise/seated-leg-curl"},
+    {name:"Standing Machine Calf Raise",    muscle:"Calves · Gastrocnemius",           sets:4, reps:"15-20",  url:"https://musclewiki.com/exercise/standing-calf-raise"}
+  ],
+  c:[
+    {name:"Dumbbell Laying Incline Row",         muscle:"Lats · Rhomboids · Traps",      sets:4, reps:"8-12",  url:"https://musclewiki.com/exercise/dumbbell-laying-incline-row"},
+    {name:"Neutral Grip Lat Pulldown",           muscle:"Lats · Latissimus Dorsi",       sets:4, reps:"10-12", url:"https://musclewiki.com/exercise/neutral-pulldown"},
+    {name:"Cable Rope Pullover",                 muscle:"Lats · Serratus Anterior",      sets:3, reps:"12-15", url:"https://musclewiki.com/it-it/exercise/cable-rope-pullover"},
+    {name:"Smith Machine JM Press",              muscle:"Triceps · Long Head",           sets:4, reps:"8-12",  url:"https://musclewiki.com/it-it/exercise/smith-machine-skullcrusher"},
+    {name:"Cross Body Cable Triceps Extension",  muscle:"Triceps · Isolation",           sets:3, reps:"12-15", url:"https://musclewiki.com/it-it/exercise/cable-cross-pushdown"},
+    {name:"Decline EZ Bar Triceps Extension",    muscle:"Triceps · Long and Lateral Head",sets:3, reps:"10-12", url:"https://musclewiki.com/exercise/barbell-laying-triceps-extensions"}
+  ],
+  d:[
+    {name:"Machine Shoulder Press",                    muscle:"Shoulders · Anterior Deltoid", sets:4, reps:"8-12",   url:"https://musclewiki.com/exercise/machine-overhand-overhead-press"},
+    {name:"Cable Low Single Arm Lateral Raise",        muscle:"Shoulders · Lateral Deltoid",  sets:4, reps:"12-20",  url:"https://musclewiki.com/exercise/cable-low-single-arm-lateral-raise"},
+    {name:"Dumbbell Internally Rotated Rear Delt Fly", muscle:"Rear Deltoid · Rhomboids",     sets:3, reps:"12-15",  url:"https://musclewiki.com/it-it/exercise/dumbbell-internally-rotated-rear-delt-fly"},
+    {name:"Cable Upright Row",                         muscle:"Traps · Lateral Deltoid",      sets:3, reps:"12-15",  url:"https://musclewiki.com/exercise/cable-upright-row"},
+    {name:"Reverse Crunch Kick Up",                    muscle:"Lower Abs · Iliopsoas",         sets:3, reps:"12-15",  url:"https://musclewiki.com/it-it/exercise/reverse-crunch-kick-up"},
+    {name:"Weighted Forearm Plank",                    muscle:"Core · Transverse Abdominis",  sets:3, reps:"30-60s", url:"https://musclewiki.com/it-it/exercise/weighted-forearm-plank"}
+  ]
+};
+
+var SK = 'wk_v4';
+function loadSt(){ try{ return JSON.parse(localStorage.getItem(SK))||{}; }catch(e){ return {}; } }
+function saveSt(d){ try{ localStorage.setItem(SK, JSON.stringify(d)); }catch(e){} }
+
+function esc(s){ return String(s).replace(/&/g,'&amp;').replace(/"/g,'&quot;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+
+function buildAll(){
+  var store = loadSt();
+  ['a','b','c','d'].forEach(function(sid){
+    var list = document.getElementById('list-'+sid);
+    list.innerHTML = '';
+    DATA[sid].forEach(function(ex, i){
+      var key = sid+'-'+i;
+      var sv = store[key]||{};
+      var sets = sv.sets!==undefined ? sv.sets : ex.sets;
+      var reps = sv.reps!==undefined ? sv.reps : ex.reps;
+      var notes = sv.notes||'';
+      var noteStyle = notes ? '' : 'display:none';
+
+      var card = document.createElement('div');
+      card.className = 'ex-card';
+
+      var html = '';
+      html += '<div class="ex-main">';
+      html += '<div class="ex-n">' + (i<9?'0':'') + (i+1) + '</div>';
+      html += '<div class="ex-info">';
+      html += '<div class="ex-name">' + esc(ex.name) + '</div>';
+      html += '<div class="ex-muscle">' + esc(ex.muscle) + '</div>';
+      html += '</div>';
+      html += '<div class="ex-btns">';
+      html += '<button class="btn-edit" id="be-'+key+'" type="button">&#9998;</button>';
+      html += '<a class="btn-watch" id="bw-'+key+'" href="' + esc(ex.url) + '" target="_blank" rel="noopener noreferrer">';
+      html += '<svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><polygon points="5 3 19 12 5 21 5 3"/></svg>Watch</a>';
+      html += '</div></div>';
+
+      html += '<div class="ex-stats">';
+      html += '<div class="pill"><span class="pill-lbl">Sets&nbsp;</span><span id="ds-'+key+'">' + esc(sets) + '</span></div>';
+      html += '<div class="pill"><span class="pill-lbl">Reps&nbsp;</span><span id="dr-'+key+'">' + esc(reps) + '</span></div>';
+      html += '<div class="pill note-pill" id="dn-'+key+'" style="'+noteStyle+'">&#128221; ' + esc(notes) + '</div>';
+      html += '</div>';
+
+      html += '<div class="ex-drawer" id="drw-'+key+'">';
+      html += '<div class="drawer-lbl">&#9998; Customize Exercise</div>';
+      html += '<div class="drawer-grid">';
+      html += '<div class="df"><label>Sets</label><input type="number" id="is-'+key+'" value="' + esc(sets) + '" min="1" max="20" inputmode="numeric"></div>';
+      html += '<div class="df"><label>Reps / Duration</label><input type="text" id="ir-'+key+'" value="' + esc(reps) + '" inputmode="text"></div>';
+      html += '<div class="df df-full"><label>Notes</label><textarea id="in-'+key+'" rows="2">' + esc(notes) + '</textarea></div>';
+      html += '</div>';
+      html += '<button class="btn-save" id="bs-'+key+'" type="button">Save</button>';
+      html += '</div>';
+
+      card.innerHTML = html;
+      list.appendChild(card);
+
+      // attach events after insert
+      document.getElementById('be-'+key).addEventListener('click', function(){
+        var d = document.getElementById('drw-'+key);
+        d.classList.toggle('open');
+      });
+
+      document.getElementById('bs-'+key).addEventListener('click', function(){
+        var s  = document.getElementById('is-'+key).value;
+        var r  = document.getElementById('ir-'+key).value;
+        var n  = document.getElementById('in-'+key).value.trim();
+        document.getElementById('ds-'+key).textContent = s;
+        document.getElementById('dr-'+key).textContent = r;
+        var nd = document.getElementById('dn-'+key);
+        nd.textContent = n ? '\uD83D\uDCDD ' + n : '';
+        nd.style.display = n ? '' : 'none';
+        var store2 = loadSt();
+        store2[key] = {sets:s, reps:r, notes:n};
+        saveSt(store2);
+        document.getElementById('drw-'+key).classList.remove('open');
+      });
+    });
+  });
+}
+
+// TABS
+document.getElementById('tabs').addEventListener('click', function(e){
+  var btn = e.target.closest('[data-tab]');
+  if(!btn) return;
+  var id = btn.getAttribute('data-tab');
+  document.querySelectorAll('.tab').forEach(function(t){ t.classList.remove('on'); });
+  document.querySelectorAll('.panel').forEach(function(p){ p.classList.remove('on'); });
+  btn.classList.add('on');
+  document.getElementById('panel-'+id).classList.add('on');
+});
+
+// INSTALL BANNER
+document.getElementById('ibc').addEventListener('click', function(){
+  document.getElementById('ib').style.display='none';
+  try{ localStorage.setItem('bnr2','1'); }catch(e){}
+});
+(function(){
+  var iOS = /iphone|ipad|ipod/i.test(navigator.userAgent||'');
+  var standalone = window.navigator.standalone===true;
+  var closed = false; try{ closed = localStorage.getItem('bnr2')==='1'; }catch(e){}
+  if(iOS && !standalone && !closed) document.getElementById('ib').classList.add('show');
+})();
+
+buildAll();
+</script>
+</body>
+</html>
