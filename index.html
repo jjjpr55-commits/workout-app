@@ -889,16 +889,16 @@ footer a { color:var(--blue); text-decoration:none; }
 
 /* +10 / -10 buttons inside the active recovery timer */
 .rt-adj-row {
-  display:flex; align-items:center; gap:8px; flex-shrink:0;
+  display:flex; align-items:center; gap:6px; flex-shrink:0;
 }
 .rt-adj-btn {
-  min-height:44px; min-width:56px; padding:0 14px; border-radius:10px;
+  height:28px; padding:0 9px; border-radius:7px;
   background:rgba(255,255,255,.06); border:1.5px solid var(--border);
   color:var(--text-sub); font-family:'Barlow Condensed', sans-serif;
-  font-size:14px; font-weight:800; letter-spacing:.5px; cursor:pointer;
+  font-size:12px; font-weight:800; letter-spacing:.5px; cursor:pointer;
   display:flex; align-items:center; justify-content:center;
   transition:all .15s; -webkit-user-select:none; user-select:none;
-  white-space:nowrap; touch-action:manipulation;
+  white-space:nowrap;
 }
 .rt-adj-btn:active { background:rgba(71,184,255,.2); border-color:var(--blue); color:var(--blue); transform:scale(.93); }
 
@@ -952,11 +952,10 @@ footer a { color:var(--blue); text-decoration:none; }
 
 .rt-skip {
   background:rgba(255,255,255,.04); border:1px solid var(--border);
-  color:var(--muted); border-radius:10px; padding:0 14px;
-  font-size:10px; font-weight:700; letter-spacing:1px; text-transform:uppercase;
-  cursor:pointer; flex-shrink:0; min-height:44px; min-width:52px;
-  display:flex; align-items:center; justify-content:center;
-  transition:all .15s; touch-action:manipulation;
+  color:var(--muted); border-radius:8px; padding:5px 10px;
+  font-size:9px; font-weight:700; letter-spacing:1px; text-transform:uppercase;
+  cursor:pointer; flex-shrink:0; min-height:32px;
+  transition:all .15s;
 }
 .rt-skip:active { background:var(--border); color:var(--text); }
 
@@ -1225,7 +1224,6 @@ function esc(s){ return String(s).replace(/&/g,'&amp;').replace(/"/g,'&quot;').r
 /* ── COUNTERS STATE ── */
 var counters = {};
 var recoveryTimers = {};
-var overtimeAutoHide = {}; /* key → setTimeout ID per overtime auto-nascondimento */
 
 /* ═══════════════════════════════════════════════
    ① WAKE LOCK — schermo sempre acceso
@@ -1534,72 +1532,11 @@ function getExRecSecs(key) {
   return RECOVERY_SECS;
 }
 
-/* ── OVERTIME: mostra ritardo silenzioso, auto-reset dopo 4.5s ── */
-function showOvertime(key, tmEl, sEl, barEl, ringEl, msgEl, total, endTime) {
-  var overtimeSecs = Math.max(0, Math.round((Date.now() - endTime) / 1000));
-
-  /* barra vuota, ring a zero */
-  if (barEl) barEl.style.width = '0%';
-  if (ringEl) ringEl.style.setProperty('--prog', '0deg');
-
-  /* testo "+ XX" con colore */
-  if (sEl) {
-    sEl.textContent = '+ ' + overtimeSecs;
-    sEl.style.color = overtimeSecs > 30 ? '#ff4747' : '#ffa547';
-  }
-  if (msgEl) {
-    msgEl.textContent = overtimeSecs > 30
-      ? '⚠️ Molto in ritardo! Inizia subito'
-      : '⏱️ In ritardo — inizia quando puoi';
-  }
-
-  /* timer visibile, pulsante + abilitato subito */
-  if (tmEl) tmEl.classList.add('active');
-  var pb = document.getElementById('cp-'+key);
-  if (pb) { pb.disabled = false; pb.style.opacity = ''; pb.style.cursor = ''; pb.classList.add('ready'); }
-
-  /* avvia overtime counter live: ogni secondo incrementa */
-  var overtimeInterval = setInterval(function() {
-    if (recoveryTimers[key]) { clearInterval(overtimeInterval); return; } /* nuovo timer partito */
-    overtimeSecs++;
-    if (sEl) {
-      sEl.textContent = '+ ' + overtimeSecs;
-      sEl.style.color = overtimeSecs > 30 ? '#ff4747' : '#ffa547';
-    }
-    if (msgEl && overtimeSecs === 31) msgEl.textContent = '⚠️ Molto in ritardo! Inizia subito';
-  }, 1000);
-
-  /* cancella eventuale auto-hide precedente */
-  if (overtimeAutoHide[key]) {
-    clearTimeout(overtimeAutoHide[key]);
-    overtimeAutoHide[key] = null;
-  }
-
-  /* auto-reset dopo 3.5s — annullato se l'utente avvia nuovo timer */
-  overtimeAutoHide[key] = setTimeout(function() {
-    overtimeAutoHide[key] = null;
-    clearInterval(overtimeInterval);
-    if (recoveryTimers[key]) return; /* nuovo timer già attivo, non toccare nulla */
-    /* reset a stato default */
-    if (tmEl) tmEl.classList.remove('active');
-    if (sEl)  { sEl.textContent = total; sEl.style.color = ''; }
-    if (barEl) barEl.style.width = '100%';
-    if (ringEl) ringEl.style.setProperty('--prog', '360deg');
-    if (msgEl) msgEl.textContent = 'Rilassati — prossimo set tra poco';
-    if (pb) pb.classList.remove('ready');
-  }, 3500);
-}
-
 function startRecoveryTimer(key, endTimeOverride, totalOverride) {
   /* clear any existing timer for this key */
   if (recoveryTimers[key]) {
     clearInterval(recoveryTimers[key]);
     recoveryTimers[key] = null;
-  }
-  /* cancel any pending overtime auto-hide for this key */
-  if (overtimeAutoHide[key]) {
-    clearTimeout(overtimeAutoHide[key]);
-    overtimeAutoHide[key] = null;
   }
 
   var tmEl   = document.getElementById('rtm-'+key);
@@ -1659,8 +1596,14 @@ function startRecoveryTimer(key, endTimeOverride, totalOverride) {
       clearActiveTimer(key);
       cancelDing(key);
       resetTitle();
-      /* ── Mostra Overtime invece di resettare subito ── */
-      showOvertime(key, tmEl, sEl, barEl, ringEl, msgEl, total, endTime);
+      tmEl.classList.remove('active');
+      sEl.style.color = '';
+      sEl.textContent = total;
+      barEl.style.width = '100%';
+      ringEl.style.setProperty('--prog', '360deg');
+      msgEl.textContent = 'Rilassati — prossimo set tra poco';
+      var pb = document.getElementById('cp-'+key);
+      if (pb) { pb.disabled = false; pb.style.opacity = ''; pb.style.cursor = ''; pb.classList.add('ready'); }
     }
   }, 500);
 }
@@ -1669,11 +1612,6 @@ function stopRecoveryTimer(key) {
   if (recoveryTimers[key]) {
     clearInterval(recoveryTimers[key]);
     recoveryTimers[key] = null;
-  }
-  /* cancel any pending overtime auto-hide */
-  if (overtimeAutoHide[key]) {
-    clearTimeout(overtimeAutoHide[key]);
-    overtimeAutoHide[key] = null;
   }
   clearActiveTimer(key);
   cancelDing(key);
@@ -2415,8 +2353,7 @@ buildAll();
 /* ── TIMER FIX: Forza risincronizzazione al rientro nell'app ──
    Usa endTime assoluto: nessun Math.floor, nessuna perdita di secondi
    a ogni cambio app. Uccide sempre il vecchio intervallo (iOS lo congela
-   senza azzerare l'handle) e ne crea uno pulito.
-   Se il timer è scaduto in background mostra l'Overtime (ritardo silenzioso). */
+   senza azzerare l'handle) e ne crea uno pulito. */
 document.addEventListener('visibilitychange', function() {
   if (document.visibilityState !== 'visible') return;
   var saved = loadActiveTimers();
@@ -2435,19 +2372,23 @@ document.addEventListener('visibilitychange', function() {
       /* 2. Timer ancora attivo: riparti con l'endTime assoluto originale */
       startRecoveryTimer(key, info.endTime, info.total);
     } else {
-      /* 3. Timer scaduto mentre l'app era in background → Overtime Tracking */
+      /* 3. Timer scaduto mentre l'app era in background */
       clearActiveTimer(key);
       cancelDing(key);
       resetTitle();
       playDing(); /* suona al rientro nell'app */
-
       var tmEl  = document.getElementById('rtm-'+key);
       var sEl   = document.getElementById('rts-'+key);
       var barEl = document.getElementById('rtb-'+key);
       var ringEl= document.getElementById('rtr-'+key);
       var msgEl = document.getElementById('rtmsg-'+key);
-
-      showOvertime(key, tmEl, sEl, barEl, ringEl, msgEl, info.total, info.endTime);
+      if (tmEl) tmEl.classList.remove('active');
+      if (sEl)  { sEl.textContent = info.total; sEl.style.color = ''; }
+      if (barEl) barEl.style.width = '100%';
+      if (ringEl) ringEl.style.setProperty('--prog','360deg');
+      if (msgEl) msgEl.textContent = 'Rilassati — prossimo set tra poco';
+      var pb = document.getElementById('cp-'+key);
+      if (pb) { pb.disabled = false; pb.style.opacity = ''; pb.style.cursor = ''; pb.classList.add('ready'); }
     }
   });
 });
