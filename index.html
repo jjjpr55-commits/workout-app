@@ -1582,11 +1582,7 @@ buildAll();
   });
 })();
 
-/* ── TIMER FIX: safety-net per iOS quando la pagina torna visibile ──
-   Con il nuovo approccio endTime-based i timer si autocorreggono già al
-   prossimo tick (500ms). Questo listener gestisce il caso estremo in cui
-   iOS ha sospeso completamente l'intervallo (es. PWA in background per
-   molto tempo): in quel caso riavviamo il timer con il tempo corretto. */
+/* ── TIMER FIX: Forza la sincronizzazione al rientro nell'app ── */
 document.addEventListener('visibilitychange', function() {
   if (document.visibilityState !== 'visible') return;
   var saved = loadActiveTimers();
@@ -1594,17 +1590,21 @@ document.addEventListener('visibilitychange', function() {
   Object.keys(saved).forEach(function(key) {
     var info = saved[key];
     if (!info || !info.start || !info.left || !info.total) return;
+
     var elapsedSecs = Math.floor((now - info.start) / 1000);
     var left = info.left - elapsedSecs;
+
+    /* 1. Uccidi SEMPRE il vecchio intervallo (iOS potrebbe averlo "congelato" o distrutto) */
+    if (recoveryTimers[key]) {
+      clearInterval(recoveryTimers[key]);
+      recoveryTimers[key] = null;
+    }
+
     if (left > 0) {
-      /* Riavvia solo se l'intervallo è stato ucciso da iOS (non c'è handle attivo) */
-      if (!recoveryTimers[key]) {
-        startRecoveryTimer(key, left, info.total);
-      }
-      /* Se l'intervallo è ancora vivo, il prossimo tick (≤500ms) si ricalibra da solo */
+      /* 2. Fai ripartire un timer pulito con i secondi rimanenti esatti */
+      startRecoveryTimer(key, left, info.total);
     } else {
-      /* Timer scaduto mentre l'app era in background */
-      if (recoveryTimers[key]) { clearInterval(recoveryTimers[key]); recoveryTimers[key] = null; }
+      /* 3. Timer scaduto mentre l'app era in background */
       clearActiveTimer(key);
       var tmEl  = document.getElementById('rtm-'+key);
       var sEl   = document.getElementById('rts-'+key);
