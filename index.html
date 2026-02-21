@@ -928,10 +928,10 @@ function showToast(msg) {
 
 /* ── TIMER PERSISTENCE HELPERS ── */
 var TIMER_SK = 'wk_active_timers';
-function saveActiveTimer(key, startTime, leftAtSave, total) {
+function saveActiveTimer(key, endTime, total) {
   try {
     var d = JSON.parse(localStorage.getItem(TIMER_SK)||'{}');
-    d[key] = {start: startTime, left: leftAtSave, total: total};
+    d[key] = {endTime: endTime, total: total};
     localStorage.setItem(TIMER_SK, JSON.stringify(d));
   } catch(e){}
 }
@@ -955,7 +955,7 @@ function getExRecSecs(key) {
   return RECOVERY_SECS;
 }
 
-function startRecoveryTimer(key, leftOverride, totalOverride) {
+function startRecoveryTimer(key, endTimeOverride, totalOverride) {
   /* clear any existing timer for this key */
   if (recoveryTimers[key]) {
     clearInterval(recoveryTimers[key]);
@@ -969,16 +969,17 @@ function startRecoveryTimer(key, leftOverride, totalOverride) {
   var msgEl  = document.getElementById('rtmsg-'+key);
   if (!tmEl) return;
 
-  var total = totalOverride || getExRecSecs(key);
-  var left  = (leftOverride !== undefined && leftOverride !== null) ? Math.min(leftOverride, total) : total;
+  var total   = totalOverride || getExRecSecs(key);
+  /* endTimeOverride è un timestamp assoluto ms; se assente calcoliamo da zero */
+  var endTime = (endTimeOverride && endTimeOverride > Date.now())
+                  ? endTimeOverride
+                  : Date.now() + total * 1000;
+
+  var left = Math.round((endTime - Date.now()) / 1000);
   if (left <= 0) { clearActiveTimer(key); return; }
 
-  /* Calcola il timestamp assoluto di scadenza — così ogni tick usa Date.now()
-     invece di decrementare left, immune al throttling di iOS Safari / PWA */
-  var endTime = Date.now() + (left * 1000);
-
-  /* persist: save endTime so we can restore after reload */
-  saveActiveTimer(key, Date.now(), left, total);
+  /* Salviamo l'endTime assoluto: nessun calcolo elapsed al ripristino */
+  saveActiveTimer(key, endTime, total);
 
   tmEl.classList.add('active');
 
@@ -1004,8 +1005,7 @@ function startRecoveryTimer(key, leftOverride, totalOverride) {
   }
 
   recoveryTimers[key] = setInterval(function() {
-    /* Ricalcola dal clock di sistema: se iOS ha "congelato" il tick per N secondi,
-       al risveglio il valore è già corretto senza bisogno di logica extra */
+    /* Calcolo sempre da endTime assoluto: immune a throttling e pause iOS */
     left = Math.round((endTime - Date.now()) / 1000);
     if (left < 0) left = 0;
     updateDisplay();
@@ -1022,7 +1022,7 @@ function startRecoveryTimer(key, leftOverride, totalOverride) {
       var pb = document.getElementById('cp-'+key);
       if (pb) { pb.disabled = false; pb.style.opacity = ''; pb.style.cursor = ''; pb.classList.add('ready'); }
     }
-  }, 500); /* 500ms per maggiore reattività al risveglio senza overhead */
+  }, 500);
 }
 
 function stopRecoveryTimer(key) {
@@ -1567,42 +1567,39 @@ buildAll();
 /* ── RESTORE ACTIVE TIMERS after page reload ── */
 (function() {
   var saved = loadActiveTimers();
-  var now = Date.now();
   Object.keys(saved).forEach(function(key) {
     var info = saved[key];
-    if (!info || !info.start || !info.left || !info.total) { clearActiveTimer(key); return; }
-    /* how many seconds elapsed since we saved */
-    var elapsedSecs = Math.floor((now - info.start) / 1000);
-    var left = info.left - elapsedSecs;
-    if (left > 0) {
-      startRecoveryTimer(key, left, info.total);
+    if (!info || !info.endTime || !info.total) { clearActiveTimer(key); return; }
+    /* endTime è già il timestamp assoluto: nessun calcolo elapsed necessario */
+    if (info.endTime > Date.now()) {
+      startRecoveryTimer(key, info.endTime, info.total);
     } else {
       clearActiveTimer(key);
     }
   });
 })();
 
-/* ── TIMER FIX: Forza la sincronizzazione al rientro nell'app ── */
+/* ── TIMER FIX: Forza risincronizzazione al rientro nell'app ──
+   Usa endTime assoluto: nessun Math.floor, nessuna perdita di secondi
+   a ogni cambio app. Uccide sempre il vecchio intervallo (iOS lo congela
+   senza azzerare l'handle) e ne crea uno pulito. */
 document.addEventListener('visibilitychange', function() {
   if (document.visibilityState !== 'visible') return;
   var saved = loadActiveTimers();
-  var now = Date.now();
+  var now   = Date.now();
   Object.keys(saved).forEach(function(key) {
     var info = saved[key];
-    if (!info || !info.start || !info.left || !info.total) return;
+    if (!info || !info.endTime || !info.total) return;
 
-    var elapsedSecs = Math.floor((now - info.start) / 1000);
-    var left = info.left - elapsedSecs;
-
-    /* 1. Uccidi SEMPRE il vecchio intervallo (iOS potrebbe averlo "congelato" o distrutto) */
+    /* 1. Uccidi SEMPRE il vecchio intervallo (potrebbe essere congelato da iOS) */
     if (recoveryTimers[key]) {
       clearInterval(recoveryTimers[key]);
       recoveryTimers[key] = null;
     }
 
-    if (left > 0) {
-      /* 2. Fai ripartire un timer pulito con i secondi rimanenti esatti */
-      startRecoveryTimer(key, left, info.total);
+    if (info.endTime > now) {
+      /* 2. Timer ancora attivo: riparti con l'endTime assoluto originale */
+      startRecoveryTimer(key, info.endTime, info.total);
     } else {
       /* 3. Timer scaduto mentre l'app era in background */
       clearActiveTimer(key);
