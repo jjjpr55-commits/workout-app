@@ -836,13 +836,17 @@ footer a { color:var(--blue); text-decoration:none; }
 .confirm-btn-ok:active { background:rgba(200,255,71,.22); }
 
 /* ── Timer badge accanto alle reps ── */
+/* ── Timer pill — clickable button with popover ── */
+.timer-wrap { position:relative; display:flex; align-items:center; }
 .timer-pill {
   display:inline-flex; align-items:center; gap:6px;
   background:rgba(71,184,255,.07); border:1px solid rgba(71,184,255,.22);
-  border-radius:99px; padding:5px 11px;
+  border-radius:99px; padding:5px 11px; cursor:pointer;
   font-size:11px; font-weight:700; color:var(--blue);
-  white-space:nowrap;
+  white-space:nowrap; transition:all .15s;
+  -webkit-user-select:none; user-select:none;
 }
+.timer-pill:active { background:rgba(71,184,255,.18); }
 .timer-pill-lbl {
   font-size:9px; font-weight:700; letter-spacing:1px;
   text-transform:uppercase; color:var(--muted);
@@ -852,6 +856,51 @@ footer a { color:var(--blue); text-decoration:none; }
   width:12px; height:12px; flex-shrink:0; display:block;
   shape-rendering:geometricPrecision;
 }
+
+/* Timer popover */
+.timer-popover {
+  display:none; position:absolute; bottom:calc(100% + 8px); left:0;
+  background:rgba(12,12,22,.97); border:1px solid rgba(71,184,255,.28);
+  border-radius:16px; padding:12px 14px;
+  flex-direction:column; gap:8px;
+  backdrop-filter:blur(20px);
+  box-shadow:0 8px 32px rgba(0,0,0,.65);
+  animation:popIn .2s cubic-bezier(.34,1.56,.64,1);
+  white-space:nowrap; z-index:11; min-width:198px;
+}
+.timer-popover.open { display:flex; }
+.timer-pop-lbl {
+  font-size:9px; font-weight:700; letter-spacing:2px; text-transform:uppercase;
+  color:var(--blue);
+}
+.timer-presets {
+  display:grid; grid-template-columns:repeat(4,1fr); gap:5px;
+}
+.timer-preset-btn {
+  height:34px; border-radius:8px;
+  background:rgba(255,255,255,.04); border:1.5px solid var(--border);
+  color:var(--text-sub); font-family:'Barlow Condensed', sans-serif;
+  font-size:13px; font-weight:800; cursor:pointer;
+  display:flex; align-items:center; justify-content:center;
+  transition:all .15s; -webkit-user-select:none; user-select:none;
+}
+.timer-preset-btn.sel { background:rgba(71,184,255,.14); border-color:var(--blue); color:var(--blue); }
+.timer-preset-btn:active { transform:scale(.92); }
+
+/* +10 / -10 buttons inside the active recovery timer */
+.rt-adj-row {
+  display:flex; align-items:center; gap:6px; flex-shrink:0;
+}
+.rt-adj-btn {
+  height:28px; padding:0 9px; border-radius:7px;
+  background:rgba(255,255,255,.06); border:1.5px solid var(--border);
+  color:var(--text-sub); font-family:'Barlow Condensed', sans-serif;
+  font-size:12px; font-weight:800; letter-spacing:.5px; cursor:pointer;
+  display:flex; align-items:center; justify-content:center;
+  transition:all .15s; -webkit-user-select:none; user-select:none;
+  white-space:nowrap;
+}
+.rt-adj-btn:active { background:rgba(71,184,255,.2); border-color:var(--blue); color:var(--blue); transform:scale(.93); }
 
 /* ═══ RECOVERY TIMER ═══ */
 .recovery-timer {
@@ -1599,6 +1648,7 @@ function buildAll() {
       var sets = sv.sets !== undefined ? Number(sv.sets) : ex.sets;
       var reps = sv.reps !== undefined ? sv.reps : ex.reps;
       var notes = sv.notes || '';
+      var initTimerSecs = (sv.recovery && Number(sv.recovery) >= 10) ? Number(sv.recovery) : RECOVERY_SECS;
       counters[key] = 0;
 
       var card = document.createElement('div');
@@ -1664,7 +1714,20 @@ function buildAll() {
         + '<path d="M16.5 5.5l1 1"/>'
         + '</svg>';
       html += '<div class="ex-pills">';
-      html += '<div class="timer-pill" id="tb-'+key+'">'+svgWatch+'<span class="timer-pill-lbl">Timer&nbsp;</span><span class="timer-pill-val">'+initTimerSecs+'s</span></div>';
+      /* Timer pill — clickable, saves to localStorage */
+      html += '<div class="timer-wrap">';
+      html += '<button class="timer-pill" id="tb-'+key+'" type="button">'+svgWatch;
+      html += '<span class="timer-pill-lbl">Timer&nbsp;</span>';
+      html += '<span class="timer-pill-val" id="tv-'+key+'">'+initTimerSecs+'s</span>';
+      html += '</button>';
+      html += '<div class="timer-popover" id="tpop-'+key+'">';
+      html += '<div class="timer-pop-lbl">⏱ Preset recupero</div>';
+      html += '<div class="timer-presets">';
+      [60,90,120,180].forEach(function(ps) {
+        var lbl = ps===60?'1 min':ps===90?'1:30':ps===120?'2 min':'3 min';
+        html += '<button class="timer-preset-btn'+(initTimerSecs===ps?' sel':'')+'" data-secs="'+ps+'" type="button">'+lbl+'</button>';
+      });
+      html += '</div></div></div>';
       html += '<div class="pill"><span class="pill-lbl">Reps&nbsp;</span><span id="dr-'+key+'">'+esc(reps)+'</span></div>';
 
       /* PILLAR 4: weight tracking pill */
@@ -1691,7 +1754,6 @@ function buildAll() {
       html += '</div>'; /* end counter row */
 
       /* ── recovery timer ── */
-      var initTimerSecs = (sv.recovery && [60,90,120,180].indexOf(Number(sv.recovery)) !== -1) ? Number(sv.recovery) : RECOVERY_SECS;
       html += '<div class="recovery-timer" id="rtm-'+key+'">';
       html += '<div class="rt-ring-wrap">';
       html += '<div class="rt-ring-bg"></div>';
@@ -1703,11 +1765,15 @@ function buildAll() {
       html += '<div class="rt-bar-track"><div class="rt-bar-fill" id="rtb-'+key+'" style="width:100%"></div></div>';
       html += '<div class="rt-msg" id="rtmsg-'+key+'">Rilassati — prossimo set tra poco</div>';
       html += '</div>';
+      html += '<div class="rt-adj-row">';
+      html += '<button class="rt-adj-btn" id="rtminus-'+key+'" type="button">−10s</button>';
+      html += '<button class="rt-adj-btn" id="rtplus-'+key+'" type="button">+10s</button>';
+      html += '</div>';
       html += '<button class="rt-skip" id="rtsk-'+key+'" type="button">Salta</button>';
       html += '</div>';
 
       /* ── drawer ── */
-      var exRec = (sv.recovery && [60,90,120,180].indexOf(Number(sv.recovery)) !== -1) ? Number(sv.recovery) : RECOVERY_SECS;
+      var exRec = initTimerSecs;
       html += '<div class="ex-drawer" id="drw-'+key+'">';
       html += '<div class="drawer-lbl">✏ Customize Exercise</div>';
       html += '<div class="drawer-grid">';
@@ -1903,6 +1969,76 @@ function buildAll() {
           });
         });
 
+        /* ── Timer pill: open/close popover ── */
+        document.getElementById('tb-'+k).addEventListener('click', function(e) {
+          e.stopPropagation();
+          var pop = document.getElementById('tpop-'+k);
+          var isOpen = pop.classList.contains('open');
+          /* close all popovers */
+          document.querySelectorAll('.timer-popover.open, .weight-popover.open').forEach(function(p){ p.classList.remove('open'); });
+          if (!isOpen) pop.classList.add('open');
+        });
+
+        /* helper: save a new recovery value and sync all UI */
+        function applyTimerVal(val) {
+          val = Math.max(10, Math.min(600, val));
+          /* pill display */
+          var tvEl = document.getElementById('tv-'+k);
+          if (tvEl) tvEl.textContent = val + 's';
+          /* highlight preset buttons in popover */
+          document.querySelectorAll('#tpop-'+k+' .timer-preset-btn').forEach(function(b){
+            b.classList.toggle('sel', parseInt(b.getAttribute('data-secs'),10) === val);
+          });
+          /* sync drawer selector */
+          document.querySelectorAll('#rcex-'+k+' .rc-ex-opt').forEach(function(o){
+            o.classList.toggle('sel', parseInt(o.getAttribute('data-secs'),10) === val);
+          });
+          /* save */
+          var st = loadSt();
+          if (!st[k]) st[k] = {};
+          st[k].recovery = val;
+          saveSt(st);
+          /* update idle timer ring display if timer not active */
+          if (!recoveryTimers[k]) {
+            var rtsEl = document.getElementById('rts-'+k);
+            if (rtsEl) rtsEl.textContent = val;
+          }
+        }
+
+        /* Timer preset buttons in popover */
+        document.querySelectorAll('#tpop-'+k+' .timer-preset-btn').forEach(function(btn) {
+          btn.addEventListener('click', function(e) {
+            e.stopPropagation();
+            var val = parseInt(btn.getAttribute('data-secs'), 10);
+            applyTimerVal(val);
+            document.getElementById('tpop-'+k).classList.remove('open');
+            showToast('⏱ Timer: ' + val + 's salvato!');
+          });
+        });
+
+        /* ── +10 / -10 on active recovery timer ── */
+        document.getElementById('rtminus-'+k).addEventListener('click', function() {
+          if (!recoveryTimers[k]) return; /* only works while running */
+          /* read current endTime from saved state */
+          var saved = loadActiveTimers()[k];
+          if (!saved) return;
+          var newEnd = saved.endTime - 10000; /* subtract 10s */
+          var now = Date.now();
+          if (newEnd <= now + 1000) newEnd = now + 1000; /* min 1s left */
+          /* restart timer with new endTime, same total (so ring stays meaningful) */
+          stopRecoveryTimer(k);
+          startRecoveryTimer(k, newEnd, saved.total);
+        });
+
+        document.getElementById('rtplus-'+k).addEventListener('click', function() {
+          if (!recoveryTimers[k]) return; /* only works while running */
+          var saved = loadActiveTimers()[k];
+          if (!saved) return;
+          var newEnd = saved.endTime + 10000; /* add 10s */
+          stopRecoveryTimer(k);
+          startRecoveryTimer(k, newEnd, saved.total);
+        });
+
         /* save */
         document.getElementById('bs-'+k).addEventListener('click', function() {
           var s = document.getElementById('is-'+k).value;
@@ -1926,12 +2062,9 @@ function buildAll() {
           }
 
           document.getElementById('dr-'+k).textContent = r;
-          /* aggiorna il timer pill (preserva l'SVG, aggiorna solo il valore) */
-          var tbEl = document.getElementById('tb-'+k);
-          if (tbEl) {
-            var valEl = tbEl.querySelector('.timer-pill-val');
-            if (valEl) valEl.textContent = rcVal + 's';
-          }
+          /* sync timer pill + popover + ring via applyTimerVal */
+          applyTimerVal(rcVal);
+
           var nd = document.getElementById('dn-'+k);
           nd.textContent = n ? '📝 '+n : '';
           nd.style.display = n ? '' : 'none';
@@ -2049,10 +2182,13 @@ document.getElementById('tabs').addEventListener('click', function(e) {
   if (id === 'history') renderHistory();
 });
 
-/* ── CLOSE WEIGHT POPOVERS on outside click ── */
+/* ── CLOSE WEIGHT + TIMER POPOVERS on outside click ── */
 document.addEventListener('click', function(e) {
   if (!e.target.closest('.weight-wrap')) {
     document.querySelectorAll('.weight-popover.open').forEach(function(p){ p.classList.remove('open'); });
+  }
+  if (!e.target.closest('.timer-wrap')) {
+    document.querySelectorAll('.timer-popover.open').forEach(function(p){ p.classList.remove('open'); });
   }
 });
 
