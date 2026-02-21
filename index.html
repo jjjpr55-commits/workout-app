@@ -501,6 +501,29 @@ h1 em {
 }
 .btn-save:active { transform:scale(.97); opacity:.85; }
 
+/* ── Per-exercise recovery selector ── */
+.df-rec-lbl {
+  font-size:10px; font-weight:700; letter-spacing:1.5px; text-transform:uppercase;
+  color:var(--text-sub); margin-bottom:8px; display:block;
+}
+.rc-ex-row { display:grid; grid-template-columns:repeat(4,1fr); gap:6px; }
+.rc-ex-opt {
+  background:rgba(255,255,255,.04); border:1.5px solid var(--border);
+  border-radius:10px; padding:9px 4px; cursor:pointer; text-align:center;
+  transition:all .15s; -webkit-user-select:none; user-select:none;
+}
+.rc-ex-opt.sel { background:rgba(71,184,255,.12); border-color:var(--blue); }
+.rc-ex-opt:active { transform:scale(.95); }
+.rc-ex-opt .rv {
+  display:block; font-family:'Barlow Condensed', sans-serif;
+  font-size:22px; font-weight:900; color:var(--text); line-height:1;
+}
+.rc-ex-opt.sel .rv { color:var(--blue); }
+.rc-ex-opt .rl {
+  display:block; font-size:8px; font-weight:700;
+  letter-spacing:1px; text-transform:uppercase; color:var(--muted); margin-top:2px;
+}
+
 @keyframes fadeUp { from{opacity:0;transform:translateY(10px)} to{opacity:1;transform:translateY(0)} }
 
 /* ═══ PILLAR 5: Gamification — Exercise Done ═══ */
@@ -682,6 +705,23 @@ footer a { color:var(--blue); text-decoration:none; }
   transition:all .15s;
 }
 .rt-skip:active { background:var(--border); color:var(--text); }
+
+/* ═══ TOAST ═══ */
+#toast {
+  position:fixed; bottom:90px; left:50%; transform:translateX(-50%) translateY(20px);
+  background:var(--lime); color:#000;
+  font-family:'Barlow Condensed', sans-serif; font-size:14px; font-weight:800;
+  letter-spacing:2px; text-transform:uppercase;
+  padding:10px 24px; border-radius:99px;
+  box-shadow:0 4px 20px rgba(200,255,71,.4);
+  opacity:0; pointer-events:none; z-index:9999;
+  transition:opacity .22s ease, transform .22s cubic-bezier(.34,1.56,.64,1);
+}
+#toast.show {
+  opacity:1; transform:translateX(-50%) translateY(0);
+}
+
+
 </style>
 </head>
 <body>
@@ -789,6 +829,11 @@ footer a { color:var(--blue); text-decoration:none; }
   </footer>
 </div>
 
+<!-- ── TOAST ── -->
+<div id="toast">✓ Salvato!</div>
+
+
+
 <!-- ── RESET BAR (sticky, appare quando almeno 1 esercizio è nascosto) ── -->
 <div class="reset-bar" id="reset-bar">
   <div class="reset-bar-info">
@@ -866,9 +911,51 @@ function esc(s){ return String(s).replace(/&/g,'&amp;').replace(/"/g,'&quot;').r
 /* ── COUNTERS STATE ── */
 var counters = {};
 var recoveryTimers = {};  /* active setInterval handles */
-var RECOVERY_SECS = 90;
+var RECOVERY_SECS = (function(){
+  try { var v = parseInt(localStorage.getItem('wk_recovery_secs'),10); return (v===60||v===90||v===120)?v:90; } catch(e){ return 90; }
+})();
 
-function startRecoveryTimer(key) {
+/* ── TOAST ── */
+var _toastTimer = null;
+function showToast(msg) {
+  var t = document.getElementById('toast');
+  if (!t) return;
+  t.textContent = msg || '✓ Salvato!';
+  t.classList.add('show');
+  if (_toastTimer) clearTimeout(_toastTimer);
+  _toastTimer = setTimeout(function(){ t.classList.remove('show'); }, 2000);
+}
+
+/* ── TIMER PERSISTENCE HELPERS ── */
+var TIMER_SK = 'wk_active_timers';
+function saveActiveTimer(key, startTime, leftAtSave, total) {
+  try {
+    var d = JSON.parse(localStorage.getItem(TIMER_SK)||'{}');
+    d[key] = {start: startTime, left: leftAtSave, total: total};
+    localStorage.setItem(TIMER_SK, JSON.stringify(d));
+  } catch(e){}
+}
+function clearActiveTimer(key) {
+  try {
+    var d = JSON.parse(localStorage.getItem(TIMER_SK)||'{}');
+    delete d[key];
+    localStorage.setItem(TIMER_SK, JSON.stringify(d));
+  } catch(e){}
+}
+function loadActiveTimers() {
+  try { return JSON.parse(localStorage.getItem(TIMER_SK)||'{}'); } catch(e){ return {}; }
+}
+
+/* ── Per-exercise recovery time helper ── */
+function getExRecSecs(key) {
+  try {
+    var v = parseInt((loadSt()[key] || {}).recovery, 10);
+    if (v === 60 || v === 90 || v === 120 || v === 180) return v;
+  } catch(e){}
+  return RECOVERY_SECS;
+}
+
+function startRecoveryTimer(key, leftOverride, totalOverride) {
   /* clear any existing timer for this key */
   if (recoveryTimers[key]) {
     clearInterval(recoveryTimers[key]);
@@ -882,11 +969,28 @@ function startRecoveryTimer(key) {
   var msgEl  = document.getElementById('rtmsg-'+key);
   if (!tmEl) return;
 
-  var total = RECOVERY_SECS;
-  var left  = total;
+  var total = totalOverride || getExRecSecs(key);
+  var left  = (leftOverride !== undefined && leftOverride !== null) ? Math.min(leftOverride, total) : total;
+  if (left <= 0) { clearActiveTimer(key); return; }
+
+  /* persist: save start timestamp and remaining duration */
+  saveActiveTimer(key, Date.now(), left, total);
 
   tmEl.classList.add('active');
-  /* disable + button and remove ready glow */
+
+  /* ── set display IMMEDIATELY (before first tick) ── */
+  function updateDisplay() {
+    var pct = left / total;
+    sEl.textContent = left;
+    barEl.style.width = (pct * 100) + '%';
+    ringEl.style.setProperty('--prog', Math.round(pct * 360) + 'deg');
+    if (left <= 10) { msgEl.textContent = '🔥 Pronto! Inizia il prossimo set'; sEl.style.color = 'var(--lime)'; }
+    else if (left <= 30) { msgEl.textContent = '💪 Quasi pronto…'; sEl.style.color = ''; }
+    else { msgEl.textContent = 'Rilassati — prossimo set tra poco'; sEl.style.color = ''; }
+  }
+  updateDisplay();
+
+  /* disable + button */
   var plusBtn = document.getElementById('cp-'+key);
   if (plusBtn) {
     plusBtn.disabled = true;
@@ -895,37 +999,23 @@ function startRecoveryTimer(key) {
     plusBtn.classList.remove('ready');
   }
 
-  function tick() {
+  recoveryTimers[key] = setInterval(function() {
     left--;
-    var pct = left / total;
-    var deg = Math.round(pct * 360);
-    sEl.textContent  = left;
-    barEl.style.width = (pct * 100) + '%';
-    ringEl.style.setProperty('--prog', deg + 'deg');
-
-    if (left <= 10) {
-      msgEl.textContent = '🔥 Pronto! Inizia il prossimo set';
-      sEl.style.color   = 'var(--lime)';
-    } else if (left <= 30) {
-      msgEl.textContent = '💪 Quasi pronto…';
-    }
-
+    updateDisplay();
     if (left <= 0) {
       clearInterval(recoveryTimers[key]);
       recoveryTimers[key] = null;
+      clearActiveTimer(key);
       tmEl.classList.remove('active');
       sEl.style.color = '';
       sEl.textContent = total;
       barEl.style.width = '100%';
       ringEl.style.setProperty('--prog', '360deg');
       msgEl.textContent = 'Rilassati — prossimo set tra poco';
-      /* re-enable + button */
-      var plusBtn = document.getElementById('cp-'+key);
-      if (plusBtn) { plusBtn.disabled = false; plusBtn.style.opacity = ''; plusBtn.style.cursor = ''; }
+      var pb = document.getElementById('cp-'+key);
+      if (pb) { pb.disabled = false; pb.style.opacity = ''; pb.style.cursor = ''; pb.classList.add('ready'); }
     }
-  }
-
-  recoveryTimers[key] = setInterval(tick, 1000);
+  }, 1000);
 }
 
 function stopRecoveryTimer(key) {
@@ -933,19 +1023,20 @@ function stopRecoveryTimer(key) {
     clearInterval(recoveryTimers[key]);
     recoveryTimers[key] = null;
   }
+  clearActiveTimer(key);
   var tmEl   = document.getElementById('rtm-'+key);
   var sEl    = document.getElementById('rts-'+key);
   var barEl  = document.getElementById('rtb-'+key);
   var ringEl = document.getElementById('rtr-'+key);
   var msgEl  = document.getElementById('rtmsg-'+key);
   if (!tmEl) return;
+  var exSecs = getExRecSecs(key);
   tmEl.classList.remove('active');
-  sEl.textContent = RECOVERY_SECS;
+  sEl.textContent = exSecs;
   sEl.style.color = '';
   barEl.style.width = '100%';
   ringEl.style.setProperty('--prog', '360deg');
   msgEl.textContent = 'Rilassati — prossimo set tra poco';
-  /* re-enable + button */
   var plusBtn = document.getElementById('cp-'+key);
   if (plusBtn) { plusBtn.disabled = false; plusBtn.style.opacity = ''; plusBtn.style.cursor = ''; }
 }
@@ -1133,11 +1224,12 @@ function buildAll() {
       html += '</div>'; /* end counter row */
 
       /* ── recovery timer ── */
+      var initTimerSecs = (sv.recovery && [60,90,120,180].indexOf(Number(sv.recovery)) !== -1) ? Number(sv.recovery) : RECOVERY_SECS;
       html += '<div class="recovery-timer" id="rtm-'+key+'">';
       html += '<div class="rt-ring-wrap">';
       html += '<div class="rt-ring-bg"></div>';
       html += '<div class="rt-ring-progress" id="rtr-'+key+'" style="--prog:360deg"></div>';
-      html += '<div class="rt-ring-inner"><span class="rt-secs" id="rts-'+key+'">90</span></div>';
+      html += '<div class="rt-ring-inner"><span class="rt-secs" id="rts-'+key+'">'+initTimerSecs+'</span></div>';
       html += '</div>';
       html += '<div class="rt-body">';
       html += '<div class="rt-label">⏱ Recupero</div>';
@@ -1148,12 +1240,19 @@ function buildAll() {
       html += '</div>';
 
       /* ── drawer ── */
+      var exRec = (sv.recovery && [60,90,120,180].indexOf(Number(sv.recovery)) !== -1) ? Number(sv.recovery) : RECOVERY_SECS;
       html += '<div class="ex-drawer" id="drw-'+key+'">';
       html += '<div class="drawer-lbl">✏ Customize Exercise</div>';
       html += '<div class="drawer-grid">';
       html += '<div class="df"><label>Sets</label><input type="number" id="is-'+key+'" value="'+esc(sets)+'" min="1" max="20" inputmode="numeric"></div>';
       html += '<div class="df"><label>Reps / Duration</label><input type="text" id="ir-'+key+'" value="'+esc(reps)+'" inputmode="text"></div>';
       html += '<div class="df df-full"><label>Notes</label><textarea id="in-'+key+'" rows="2">'+esc(notes)+'</textarea></div>';
+      html += '<div class="df df-full"><span class="df-rec-lbl">⏱ Recupero</span>';
+      html += '<div class="rc-ex-row" id="rcex-'+key+'">';
+      [60,90,120,180].forEach(function(s) {
+        html += '<button class="rc-ex-opt'+(exRec===s?' sel':'')+'" data-secs="'+s+'" type="button"><span class="rv">'+s+'</span><span class="rl">sec</span></button>';
+      });
+      html += '</div></div>';
       html += '</div>';
       html += '<button class="btn-save" id="bs-'+key+'" type="button">Save</button>';
       html += '</div>';
@@ -1299,10 +1398,30 @@ function buildAll() {
           if (!st[k]) st[k] = {};
           st[k].weight = val;
           saveSt(st);
+          showToast('💪 ' + (val ? val + ' kg salvato!' : 'Peso rimosso'));
+        });
+        /* auto-save weight anche alla perdita del focus (blur) */
+        document.getElementById('win-'+k).addEventListener('blur', function() {
+          var val = this.value.trim();
+          var st = loadSt();
+          if (!st[k]) st[k] = {};
+          if (st[k].weight !== val) {
+            st[k].weight = val;
+            saveSt(st);
+            document.getElementById('wv-'+k).textContent = val ? val : '—';
+          }
         });
         document.getElementById('win-'+k).addEventListener('keydown', function(e) {
           if (e.key === 'Enter') document.getElementById('wok-'+k).click();
           if (e.key === 'Escape') document.getElementById('wpop-'+k).classList.remove('open');
+        });
+
+        /* recovery options in drawer */
+        document.querySelectorAll('#rcex-'+k+' .rc-ex-opt').forEach(function(opt) {
+          opt.addEventListener('click', function() {
+            document.querySelectorAll('#rcex-'+k+' .rc-ex-opt').forEach(function(o){ o.classList.remove('sel'); });
+            opt.classList.add('sel');
+          });
         });
 
         /* save */
@@ -1310,6 +1429,8 @@ function buildAll() {
           var s = document.getElementById('is-'+k).value;
           var r = document.getElementById('ir-'+k).value;
           var n = document.getElementById('in-'+k).value.trim();
+          var rcSel = document.querySelector('#rcex-'+k+' .rc-ex-opt.sel');
+          var rcVal = rcSel ? parseInt(rcSel.getAttribute('data-secs'),10) : RECOVERY_SECS;
           maxSets = Number(s) || maxSets;
           counters[k] = 0;
 
@@ -1337,10 +1458,16 @@ function buildAll() {
 
           var st = loadSt();
           if (!st[k]) st[k] = {};
-          st[k].sets = s; st[k].reps = r; st[k].notes = n;
+          st[k].sets = s; st[k].reps = r; st[k].notes = n; st[k].recovery = rcVal;
           saveSt(st);
+          /* update timer idle display with new recovery time */
+          if (!recoveryTimers[k]) {
+            var rtsEl = document.getElementById('rts-'+k);
+            if (rtsEl) rtsEl.textContent = rcVal;
+          }
           document.getElementById('drw-'+k).classList.remove('open');
           updateCounter(k, maxSets);
+          showToast('✓ Salvato!');
         });
 
         /* session reset button */
@@ -1429,6 +1556,64 @@ document.getElementById('ibc').addEventListener('click', function() {
 })();
 
 buildAll();
+
+/* ── RESTORE ACTIVE TIMERS after page reload ── */
+(function() {
+  var saved = loadActiveTimers();
+  var now = Date.now();
+  Object.keys(saved).forEach(function(key) {
+    var info = saved[key];
+    if (!info || !info.start || !info.left || !info.total) { clearActiveTimer(key); return; }
+    /* how many seconds elapsed since we saved */
+    var elapsedSecs = Math.floor((now - info.start) / 1000);
+    var left = info.left - elapsedSecs;
+    if (left > 0) {
+      startRecoveryTimer(key, left, info.total);
+    } else {
+      clearActiveTimer(key);
+    }
+  });
+})();
+
+/* ── TIMER FIX: ricalcola i timer quando l'utente torna sull'app ── */
+/* Su mobile, setInterval si congela in background: quando la pagina
+   torna visibile calcoliamo il tempo reale trascorso dal timestamp salvato */
+document.addEventListener('visibilitychange', function() {
+  if (document.visibilityState !== 'visible') return;
+  var saved = loadActiveTimers();
+  var now = Date.now();
+  Object.keys(saved).forEach(function(key) {
+    var info = saved[key];
+    if (!info || !info.start || !info.left || !info.total) return;
+    /* stop l'intervallo "congelato" se presente */
+    if (recoveryTimers[key]) {
+      clearInterval(recoveryTimers[key]);
+      recoveryTimers[key] = null;
+    }
+    var elapsedSecs = Math.floor((now - info.start) / 1000);
+    var left = info.left - elapsedSecs;
+    if (left > 0) {
+      startRecoveryTimer(key, left, info.total);
+    } else {
+      /* timer già scaduto mentre eravamo fuori */
+      clearActiveTimer(key);
+      var tmEl  = document.getElementById('rtm-'+key);
+      var sEl   = document.getElementById('rts-'+key);
+      var barEl = document.getElementById('rtb-'+key);
+      var ringEl= document.getElementById('rtr-'+key);
+      var msgEl = document.getElementById('rtmsg-'+key);
+      if (tmEl) tmEl.classList.remove('active');
+      if (sEl)  { sEl.textContent = info.total; sEl.style.color = ''; }
+      if (barEl) barEl.style.width = '100%';
+      if (ringEl) ringEl.style.setProperty('--prog','360deg');
+      if (msgEl) msgEl.textContent = 'Rilassati — prossimo set tra poco';
+      var pb = document.getElementById('cp-'+key);
+      if (pb) { pb.disabled = false; pb.style.opacity = ''; pb.style.cursor = ''; pb.classList.add('ready'); }
+    }
+  });
+});
+
+
 </script>
 </body>
 </html>
