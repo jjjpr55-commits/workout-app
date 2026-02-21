@@ -1225,6 +1225,81 @@ function esc(s){ return String(s).replace(/&/g,'&amp;').replace(/"/g,'&quot;').r
 var counters = {};
 var recoveryTimers = {};
 
+/* ═══════════════════════════════════════════════
+   ① WAKE LOCK — schermo sempre acceso
+   ═══════════════════════════════════════════════ */
+var _wakeLock = null;
+function requestWakeLock() {
+  if (!('wakeLock' in navigator)) return;
+  navigator.wakeLock.request('screen')
+    .then(function(lock) { _wakeLock = lock; })
+    .catch(function() {});
+}
+function releaseWakeLock() {
+  if (_wakeLock) { _wakeLock.release().catch(function(){}); _wakeLock = null; }
+}
+document.addEventListener('visibilitychange', function() {
+  if (document.visibilityState === 'visible' && sessionActive && !_wakeLock) {
+    requestWakeLock();
+  }
+});
+
+/* ═══════════════════════════════════════════════
+   ② AUDIO DING — 3 beep sinusoidali morbidi
+   ═══════════════════════════════════════════════ */
+var _audioCtx = null;
+function _getAudioCtx() {
+  if (!_audioCtx) {
+    try { _audioCtx = new (window.AudioContext || window.webkitAudioContext)(); } catch(e) {}
+  }
+  return _audioCtx;
+}
+function playDing() {
+  var ctx = _getAudioCtx();
+  if (!ctx) return;
+  [0, 0.18, 0.36].forEach(function(delay, idx) {
+    var osc  = ctx.createOscillator();
+    var gain = ctx.createGain();
+    osc.connect(gain);
+    gain.connect(ctx.destination);
+    osc.type = 'sine';
+    osc.frequency.value = [880, 1100, 1320][idx];
+    var t = ctx.currentTime + delay;
+    gain.gain.setValueAtTime(0, t);
+    gain.gain.linearRampToValueAtTime(0.18, t + 0.04);
+    gain.gain.exponentialRampToValueAtTime(0.0001, t + 0.28);
+    osc.start(t);
+    osc.stop(t + 0.30);
+  });
+}
+var _dingScheduled = {};
+function scheduleDing(key, secondsLeft) {
+  if (_dingScheduled[key]) { clearTimeout(_dingScheduled[key]); delete _dingScheduled[key]; }
+  if (secondsLeft <= 0) return;
+  var fireIn = (secondsLeft - 3) * 1000;
+  if (fireIn < 0) fireIn = 0;
+  _dingScheduled[key] = setTimeout(function() {
+    delete _dingScheduled[key];
+    playDing();
+  }, fireIn);
+}
+function cancelDing(key) {
+  if (_dingScheduled[key]) { clearTimeout(_dingScheduled[key]); delete _dingScheduled[key]; }
+}
+
+/* ═══════════════════════════════════════════════
+   ③ DYNAMIC TITLE — tab del browser
+   ═══════════════════════════════════════════════ */
+var _originalTitle = document.title;
+function setRecoveryTitle(secsLeft) {
+  if (secsLeft <= 0) { document.title = _originalTitle; return; }
+  var m = Math.floor(secsLeft / 60);
+  var s = secsLeft % 60;
+  var t = (m > 0 ? m + ':' + String(s).padStart(2,'0') : s + 's');
+  document.title = '⏳ ' + t + ' — Recupero';
+}
+function resetTitle() { document.title = _originalTitle; }
+
 /* ── SESSION STOPWATCH STATE ── */
 var sessionStartTime = null;   // ms timestamp when current session started
 var currentSession   = null;   // 'a' | 'b' | 'c' | 'd'
@@ -1373,6 +1448,7 @@ function startSessionChrono(sid) {
   currentSession   = sid;
   sessionActive    = true;
   sessionStartTime = Date.now();
+  requestWakeLock();
   _updateFloatingChrono(sid, 0);
   _chronoInterval = setInterval(function() {
     var elapsed = Math.floor((Date.now() - sessionStartTime) / 1000);
@@ -1383,6 +1459,8 @@ function stopSessionChrono() {
   if (_chronoInterval) { clearInterval(_chronoInterval); _chronoInterval = null; }
   var pill = document.getElementById('floating-chrono');
   if (pill) pill.classList.remove('visible');
+  releaseWakeLock();
+  resetTitle();
   sessionActive = false;
 }
 function resetSessionState() {
@@ -1482,12 +1560,16 @@ function startRecoveryTimer(key, endTimeOverride, totalOverride) {
 
   tmEl.classList.add('active');
 
+  /* Schedule ding 3s before end */
+  scheduleDing(key, left);
+
   /* ── set display IMMEDIATELY (before first tick) ── */
   function updateDisplay() {
     var pct = left / total;
     sEl.textContent = left;
     barEl.style.width = (pct * 100) + '%';
     ringEl.style.setProperty('--prog', Math.round(pct * 360) + 'deg');
+    setRecoveryTitle(left);
     if (left <= 10) { msgEl.textContent = '🔥 Pronto! Inizia il prossimo set'; sEl.style.color = 'var(--lime)'; }
     else if (left <= 30) { msgEl.textContent = '💪 Quasi pronto…'; sEl.style.color = ''; }
     else { msgEl.textContent = 'Rilassati — prossimo set tra poco'; sEl.style.color = ''; }
@@ -1512,6 +1594,8 @@ function startRecoveryTimer(key, endTimeOverride, totalOverride) {
       clearInterval(recoveryTimers[key]);
       recoveryTimers[key] = null;
       clearActiveTimer(key);
+      cancelDing(key);
+      resetTitle();
       tmEl.classList.remove('active');
       sEl.style.color = '';
       sEl.textContent = total;
@@ -1530,6 +1614,8 @@ function stopRecoveryTimer(key) {
     recoveryTimers[key] = null;
   }
   clearActiveTimer(key);
+  cancelDing(key);
+  resetTitle();
   var tmEl   = document.getElementById('rtm-'+key);
   var sEl    = document.getElementById('rts-'+key);
   var barEl  = document.getElementById('rtb-'+key);
@@ -2235,6 +2321,20 @@ document.getElementById('ibc').addEventListener('click', function() {
 
 buildAll();
 
+/* ── iOS Audio unlock: inizializza AudioContext al primo tap ── */
+(function() {
+  function unlockAudio() {
+    var ctx = _getAudioCtx();
+    if (ctx && ctx.state === 'suspended') {
+      ctx.resume().catch(function(){});
+    }
+    document.removeEventListener('touchstart', unlockAudio);
+    document.removeEventListener('click', unlockAudio);
+  }
+  document.addEventListener('touchstart', unlockAudio, { once: true });
+  document.addEventListener('click', unlockAudio, { once: true });
+})();
+
 /* ── RESTORE ACTIVE TIMERS after page reload ── */
 (function() {
   var saved = loadActiveTimers();
@@ -2274,6 +2374,9 @@ document.addEventListener('visibilitychange', function() {
     } else {
       /* 3. Timer scaduto mentre l'app era in background */
       clearActiveTimer(key);
+      cancelDing(key);
+      resetTitle();
+      playDing(); /* suona al rientro nell'app */
       var tmEl  = document.getElementById('rtm-'+key);
       var sEl   = document.getElementById('rts-'+key);
       var barEl = document.getElementById('rtb-'+key);
