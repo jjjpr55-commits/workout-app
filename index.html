@@ -617,6 +617,17 @@ h1 em {
   position:relative; z-index:1; transition:background .15s;
 }
 .session-banner-reset:active { background:rgba(255,255,255,.14); }
+.session-banner-finish {
+  margin-top:10px; background:var(--lime); border:none;
+  border-radius:99px; padding:11px 28px; color:#000;
+  font-family:'Barlow Condensed', sans-serif;
+  font-size:13px; font-weight:900; letter-spacing:2px; text-transform:uppercase;
+  cursor:pointer; display:inline-block; position:relative; z-index:1;
+  transition:transform .15s, opacity .15s;
+  box-shadow:0 4px 20px rgba(200,255,71,.35);
+}
+.session-banner-finish:active { transform:scale(.96); opacity:.85; }
+.session-banner-actions { display:flex; flex-direction:column; align-items:center; gap:8px; margin-top:16px; }
 
 /* ═══ FOCUS MODE ═══ */
 .ex-card {
@@ -648,6 +659,181 @@ body.focus-active .ex-card.focus-card {
 
 footer { text-align:center; margin-top:52px; font-size:11px; color:#2e2e42; line-height:2; }
 footer a { color:var(--blue); text-decoration:none; }
+
+/* ═══ FLOATING CHRONO PILL ═══ */
+.floating-chrono {
+  position:fixed; top:20px; right:20px; z-index:1000;
+  display:flex; align-items:center; gap:8px;
+  background:rgba(0,0,0,.65);
+  border:1px solid rgba(255,255,255,.1);
+  border-radius:99px;
+  padding:8px 16px 8px 12px;
+  backdrop-filter:blur(20px) saturate(160%);
+  -webkit-backdrop-filter:blur(20px) saturate(160%);
+  box-shadow:0 4px 24px rgba(0,0,0,.55), 0 1px 0 rgba(255,255,255,.07) inset;
+  opacity:0; pointer-events:none;
+  transform:translateY(-8px) scale(.94);
+  transition:opacity .3s ease, transform .3s cubic-bezier(.34,1.56,.64,1);
+}
+.floating-chrono.visible {
+  opacity:1; pointer-events:auto;
+  transform:translateY(0) scale(1);
+}
+.chrono-dot {
+  width:7px; height:7px; border-radius:50%;
+  background:var(--lime);
+  box-shadow:0 0 8px rgba(200,255,71,.8);
+  flex-shrink:0;
+  animation:breatheDot 2.4s ease-in-out infinite;
+}
+@keyframes breatheDot {
+  0%,100% { opacity:1; transform:scale(1); box-shadow:0 0 8px rgba(200,255,71,.8); }
+  50%     { opacity:.5; transform:scale(.7); box-shadow:0 0 3px rgba(200,255,71,.3); }
+}
+.chrono-session-lbl {
+  font-family:'Barlow Condensed', sans-serif;
+  font-size:10px; font-weight:800; letter-spacing:2px; text-transform:uppercase;
+  color:var(--lime); line-height:1;
+}
+.chrono-time {
+  font-family:'Barlow Condensed', sans-serif;
+  font-size:18px; font-weight:900; color:#fff; line-height:1;
+  font-variant-numeric:tabular-nums; letter-spacing:1px;
+}
+
+/* ═══ HISTORY TIMELINE ═══ */
+.history-empty {
+  text-align:center; padding:60px 20px;
+  font-size:14px; color:var(--muted); line-height:2;
+}
+.history-empty-icon { display:block; font-size:42px; margin-bottom:12px; }
+
+.history-header-row {
+  display:flex; align-items:center; justify-content:space-between;
+  margin-bottom:32px;
+}
+.btn-clear-history {
+  background:none; border:none; cursor:pointer;
+  display:inline-flex; align-items:center; gap:6px;
+  font-size:11px; font-weight:600; letter-spacing:.5px;
+  color:var(--muted); padding:6px 10px; border-radius:8px;
+  transition:color .2s, background .2s;
+  -webkit-user-select:none; user-select:none;
+}
+.btn-clear-history:hover { color:rgba(239,68,68,.7); background:rgba(239,68,68,.07); }
+.btn-clear-history.armed { color:rgba(239,68,68,.9); background:rgba(239,68,68,.12); }
+.btn-clear-history svg { width:13px; height:13px; flex-shrink:0; }
+
+.history-timeline {
+  position:relative; padding-left:36px;
+}
+/* Vertical line */
+.history-timeline::before {
+  content:''; position:absolute; left:14px; top:6px; bottom:0;
+  width:1.5px;
+  background:linear-gradient(to bottom, var(--border-strong) 0%, transparent 100%);
+}
+
+.history-entry {
+  position:relative; margin-bottom:24px;
+  animation:fadeUp .3s ease;
+}
+
+/* Session node on the line */
+.history-node {
+  position:absolute; left:-36px; top:14px;
+  width:28px; height:28px; border-radius:50%;
+  display:flex; align-items:center; justify-content:center;
+  font-family:'Barlow Condensed', sans-serif;
+  font-size:13px; font-weight:900; letter-spacing:-.5px;
+  box-shadow:0 0 0 3px var(--bg);
+  z-index:1;
+}
+.history-node-a { background:rgba(200,255,71,.18); border:1.5px solid rgba(200,255,71,.5); color:var(--lime); }
+.history-node-b { background:rgba(71,184,255,.18); border:1.5px solid rgba(71,184,255,.5); color:var(--blue); }
+.history-node-c { background:rgba(168,85,247,.18); border:1.5px solid rgba(168,85,247,.5); color:var(--purple); }
+.history-node-d { background:rgba(255,165,71,.18); border:1.5px solid rgba(255,165,71,.5); color:#ffa547; }
+
+/* History card */
+.history-card {
+  background:var(--card);
+  border:1px solid var(--border);
+  border-radius:16px;
+  padding:16px 18px;
+  backdrop-filter:var(--glass-blur);
+  -webkit-backdrop-filter:var(--glass-blur);
+  box-shadow:var(--shadow-card);
+  display:flex; align-items:center; justify-content:space-between; gap:12px;
+}
+.history-card-left { display:flex; flex-direction:column; gap:4px; }
+.history-session-name {
+  font-family:'Barlow Condensed', sans-serif;
+  font-size:15px; font-weight:800; letter-spacing:.3px; color:var(--text);
+}
+.history-date-str {
+  font-size:11px; color:var(--muted); font-variant-numeric:tabular-nums;
+}
+.history-dur-badge {
+  display:flex; flex-direction:column; align-items:flex-end; gap:2px; flex-shrink:0;
+}
+.history-dur-val {
+  font-family:'Barlow Condensed', sans-serif;
+  font-size:22px; font-weight:900; color:var(--text); line-height:1;
+  font-variant-numeric:tabular-nums;
+}
+.history-dur-lbl {
+  font-size:8px; font-weight:700; letter-spacing:1.5px; text-transform:uppercase;
+  color:var(--muted);
+}
+.confirm-overlay {
+  display:none; position:fixed; inset:0; z-index:9000;
+  background:rgba(0,0,0,.72);
+  backdrop-filter:blur(8px);
+  align-items:center; justify-content:center;
+  padding:20px;
+}
+.confirm-overlay.open { display:flex; animation:fadeInOverlay .18s ease; }
+@keyframes fadeInOverlay { from{opacity:0} to{opacity:1} }
+.confirm-box {
+  background:rgba(15,15,28,.97);
+  border:1px solid rgba(255,255,255,.12);
+  border-radius:22px;
+  padding:28px 24px 22px;
+  max-width:340px; width:100%;
+  text-align:center;
+  box-shadow:0 20px 60px rgba(0,0,0,.7), 0 1px 0 rgba(255,255,255,.08) inset;
+  animation:confirmPop .28s cubic-bezier(.34,1.56,.64,1);
+}
+@keyframes confirmPop { from{transform:scale(.82);opacity:0} to{transform:scale(1);opacity:1} }
+.confirm-icon { font-size:36px; margin-bottom:12px; }
+.confirm-title {
+  font-family:'Barlow Condensed', sans-serif;
+  font-size:26px; font-weight:900; color:#fff;
+  letter-spacing:-.5px; margin-bottom:10px;
+}
+.confirm-sub { font-size:13px; color:var(--text-sub); line-height:1.6; margin-bottom:22px; }
+.confirm-btns { display:flex; gap:10px; }
+.confirm-btn {
+  flex:1; padding:13px 10px; border-radius:12px; border:none;
+  font-family:'Barlow Condensed', sans-serif;
+  font-size:15px; font-weight:800; letter-spacing:1.5px; text-transform:uppercase;
+  cursor:pointer; min-height:48px;
+  transition:background .15s, transform .12s;
+  -webkit-user-select:none; user-select:none;
+}
+.confirm-btn:active { transform:scale(.96); }
+.confirm-btn-cancel {
+  background:rgba(255,255,255,.07);
+  border:1.5px solid rgba(255,255,255,.14);
+  color:var(--text-sub);
+}
+.confirm-btn-cancel:active { background:rgba(255,255,255,.13); }
+.confirm-btn-ok {
+  background:rgba(200,255,71,.12);
+  border:1.5px solid rgba(200,255,71,.4);
+  color:var(--lime);
+}
+.confirm-btn-ok:active { background:rgba(200,255,71,.22); }
 
 /* ── Timer badge accanto alle reps ── */
 .timer-pill {
@@ -783,18 +969,26 @@ footer a { color:var(--blue); text-decoration:none; }
     <button class="tab" data-tab="d" type="button">
       <span class="tab-l">D</span><span class="tab-n">Shoulders &amp; Abs</span>
     </button>
+    <button class="tab" data-tab="history" type="button">
+      <span class="tab-l" style="font-size:22px">📋</span><span class="tab-n">Storico</span>
+    </button>
   </div>
 
   <div class="panel on" id="panel-a">
     <div class="panel-head">
       <div><div class="panel-title">Session A</div><div class="panel-sub"><b>Chest</b> · <b>Biceps</b> — 6 exercises</div></div>
+      <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;">
       <div class="panel-tag">Push + Curl Day</div>
+    </div>
     </div>
     <div class="session-banner" id="sb-a">
       <div class="session-banner-icon">🏆</div>
       <div class="session-banner-title">SESSION <em>DONE!</em></div>
       <div class="session-banner-sub">Tutti gli esercizi completati — grande lavoro!</div>
-      <button class="session-banner-reset" id="sbr-a" type="button">↺ Ricomincia</button>
+      <div class="session-banner-actions">
+        <button class="session-banner-finish" id="sbf-a" type="button">✓ Fine Allenamento</button>
+        <button class="session-banner-reset" id="sbr-a" type="button">↺ Ricomincia</button>
+      </div>
     </div>
     <div class="ex-list" id="list-a"></div>
   </div>
@@ -802,13 +996,18 @@ footer a { color:var(--blue); text-decoration:none; }
   <div class="panel" id="panel-b">
     <div class="panel-head">
       <div><div class="panel-title">Session B</div><div class="panel-sub"><b>Quadriceps</b> · <b>Hamstrings</b> · <b>Calves</b> — 5 exercises</div></div>
+      <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;">
       <div class="panel-tag">Leg Day</div>
+    </div>
     </div>
     <div class="session-banner" id="sb-b">
       <div class="session-banner-icon">🔥</div>
       <div class="session-banner-title">SESSION <em>DONE!</em></div>
       <div class="session-banner-sub">Gambe distrutte — missione compiuta!</div>
-      <button class="session-banner-reset" id="sbr-b" type="button">↺ Ricomincia</button>
+      <div class="session-banner-actions">
+        <button class="session-banner-finish" id="sbf-b" type="button">✓ Fine Allenamento</button>
+        <button class="session-banner-reset" id="sbr-b" type="button">↺ Ricomincia</button>
+      </div>
     </div>
     <div class="ex-list" id="list-b"></div>
   </div>
@@ -816,13 +1015,18 @@ footer a { color:var(--blue); text-decoration:none; }
   <div class="panel" id="panel-c">
     <div class="panel-head">
       <div><div class="panel-title">Session C</div><div class="panel-sub"><b>Back</b> · <b>Triceps</b> — 6 exercises</div></div>
+      <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;">
       <div class="panel-tag">Pull + Press Day</div>
+    </div>
     </div>
     <div class="session-banner" id="sb-c">
       <div class="session-banner-icon">💪</div>
       <div class="session-banner-title">SESSION <em>DONE!</em></div>
       <div class="session-banner-sub">Schiena e tricipiti al massimo!</div>
-      <button class="session-banner-reset" id="sbr-c" type="button">↺ Ricomincia</button>
+      <div class="session-banner-actions">
+        <button class="session-banner-finish" id="sbf-c" type="button">✓ Fine Allenamento</button>
+        <button class="session-banner-reset" id="sbr-c" type="button">↺ Ricomincia</button>
+      </div>
     </div>
     <div class="ex-list" id="list-c"></div>
   </div>
@@ -830,21 +1034,63 @@ footer a { color:var(--blue); text-decoration:none; }
   <div class="panel" id="panel-d">
     <div class="panel-head">
       <div><div class="panel-title">Session D</div><div class="panel-sub"><b>Shoulders</b> · <b>Abs</b> — 6 exercises</div></div>
+      <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;">
       <div class="panel-tag">Delt + Core Day</div>
+    </div>
     </div>
     <div class="session-banner" id="sb-d">
       <div class="session-banner-icon">⚡</div>
       <div class="session-banner-title">SESSION <em>DONE!</em></div>
       <div class="session-banner-sub">Spalle e core di acciaio — ottimo!</div>
-      <button class="session-banner-reset" id="sbr-d" type="button">↺ Ricomincia</button>
+      <div class="session-banner-actions">
+        <button class="session-banner-finish" id="sbf-d" type="button">✓ Fine Allenamento</button>
+        <button class="session-banner-reset" id="sbr-d" type="button">↺ Ricomincia</button>
+      </div>
     </div>
     <div class="ex-list" id="list-d"></div>
+  </div>
+
+
+
+  <div class="panel" id="panel-history">
+    <div class="panel-head">
+      <div><div class="panel-title">Storico</div><div class="panel-sub">I tuoi allenamenti completati</div></div>
+      <div class="panel-tag">Progressi</div>
+    </div>
+    <div id="history-content"></div>
   </div>
 
   <footer>
     Exercise guides on <a href="https://musclewiki.com" target="_blank">MuscleWiki.com</a><br>
     Sets &amp; reps are saved automatically in this browser.
   </footer>
+</div>
+
+
+
+<!-- ── FLOATING CHRONO PILL ── -->
+<div class="floating-chrono" id="floating-chrono">
+  <div class="chrono-dot" id="floating-chrono-dot"></div>
+  <span class="chrono-session-lbl" id="floating-chrono-sid">A</span>
+  <span class="chrono-time" id="floating-chrono-val">00:00</span>
+</div>
+<!-- Legacy compat spans (hidden) -->
+<span id="chrono-val-a" style="display:none"></span>
+<span id="chrono-val-b" style="display:none"></span>
+<span id="chrono-val-c" style="display:none"></span>
+<span id="chrono-val-d" style="display:none"></span>
+
+<!-- ── CONFIRM MODAL ── -->
+<div class="confirm-overlay" id="confirm-overlay">
+  <div class="confirm-box">
+    <div class="confirm-icon">⚠️</div>
+    <div class="confirm-title">Sei sicuro?</div>
+    <div class="confirm-sub" id="confirm-sub-text">Questa azione resetterà la sessione.<br>I progressi non salvati andranno persi.</div>
+    <div class="confirm-btns">
+      <button class="confirm-btn confirm-btn-cancel" id="confirm-cancel" type="button">Annulla</button>
+      <button class="confirm-btn confirm-btn-ok" id="confirm-ok" type="button">Reset</button>
+    </div>
+  </div>
 </div>
 
 <!-- ── TOAST ── -->
@@ -928,7 +1174,13 @@ function esc(s){ return String(s).replace(/&/g,'&amp;').replace(/"/g,'&quot;').r
 
 /* ── COUNTERS STATE ── */
 var counters = {};
-var recoveryTimers = {};  /* active setInterval handles */
+var recoveryTimers = {};
+
+/* ── SESSION STOPWATCH STATE ── */
+var sessionStartTime = null;   // ms timestamp when current session started
+var currentSession   = null;   // 'a' | 'b' | 'c' | 'd'
+var sessionActive    = false;
+var _chronoInterval  = null;  /* active setInterval handles */
 var RECOVERY_SECS = (function(){
   try { var v = parseInt(localStorage.getItem('wk_recovery_secs'),10); return (v===60||v===90||v===120)?v:90; } catch(e){ return 90; }
 })();
@@ -942,6 +1194,186 @@ function showToast(msg) {
   t.classList.add('show');
   if (_toastTimer) clearTimeout(_toastTimer);
   _toastTimer = setTimeout(function(){ t.classList.remove('show'); }, 2000);
+}
+
+
+/* ── HISTORY HELPERS ── */
+var HIST_SK = 'wk_history';
+function loadHistory() {
+  try { return JSON.parse(localStorage.getItem(HIST_SK)) || []; } catch(e) { return []; }
+}
+function saveHistoryRecord(record) {
+  try {
+    var h = loadHistory();
+    h.unshift(record);          // prepend — most recent first
+    localStorage.setItem(HIST_SK, JSON.stringify(h));
+  } catch(e) {}
+}
+var SESSION_NAMES = { A:'Chest & Biceps', B:'Legs', C:'Back & Triceps', D:'Shoulders & Abs' };
+function renderHistory() {
+  var el = document.getElementById('history-content');
+  if (!el) return;
+  var h = loadHistory();
+
+  /* ── Header row with ghost clear button ── */
+  var headerHtml = '<div class="history-header-row">';
+  headerHtml += '<div style="font-size:12px;color:var(--muted)">'+h.length+' allenament'+(h.length===1?'o':'i')+' salvat'+(h.length===1?'o':'i')+'</div>';
+  headerHtml += '<button class="btn-clear-history" id="btn-clear-hist" type="button">';
+  headerHtml += '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 01-2 2H8a2 2 0 01-2-2L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/><path d="M9 6V4a1 1 0 011-1h4a1 1 0 011 1v2"/></svg>';
+  headerHtml += 'Cancella</button>';
+  headerHtml += '</div>';
+
+  if (!h.length) {
+    el.innerHTML = headerHtml + '<div class="history-empty"><span class="history-empty-icon">📭</span>Nessun allenamento salvato.<br>Completa una scheda per vedere lo storico!</div>';
+    _bindClearBtn();
+    return;
+  }
+
+  var timelineHtml = '<div class="history-timeline">';
+  h.forEach(function(r) {
+    var sid = (r.session || 'A').toUpperCase();
+    var nodeClass = 'history-node-' + sid.toLowerCase();
+    var name = SESSION_NAMES[sid] || ('Session ' + sid);
+    /* Try to extract just the duration number for big display */
+    var durParts = r.duration || '';
+    var durDisplay = durParts;
+    var durUnit = '';
+    /* e.g. "42 min 15 s" → big: "42:15", label: "min" */
+    var minMatch = durParts.match(/(\d+)\s*min\s*(\d+)?/);
+    if (minMatch) {
+      var mm = minMatch[1];
+      var ss = minMatch[2] ? String(minMatch[2]).padStart(2,'0') : '00';
+      durDisplay = mm + ':' + ss;
+      durUnit = 'min';
+    } else {
+      var secMatch = durParts.match(/^(\d+)\s*s/);
+      if (secMatch) { durDisplay = secMatch[1]; durUnit = 'sec'; }
+    }
+    timelineHtml += '<div class="history-entry">';
+    timelineHtml += '<div class="history-node '+nodeClass+'">' + sid + '</div>';
+    timelineHtml += '<div class="history-card">';
+    timelineHtml += '<div class="history-card-left">';
+    timelineHtml += '<div class="history-session-name">Session ' + sid + ' — ' + name + '</div>';
+    timelineHtml += '<div class="history-date-str">' + (r.date || '') + '</div>';
+    timelineHtml += '</div>';
+    timelineHtml += '<div class="history-dur-badge">';
+    timelineHtml += '<div class="history-dur-val">' + durDisplay + '</div>';
+    timelineHtml += '<div class="history-dur-lbl">' + (durUnit || 'durata') + '</div>';
+    timelineHtml += '</div>';
+    timelineHtml += '</div></div>';
+  });
+  timelineHtml += '</div>';
+
+  el.innerHTML = headerHtml + timelineHtml;
+  _bindClearBtn();
+}
+function _bindClearBtn() {
+  var btn = document.getElementById('btn-clear-hist');
+  if (!btn) return;
+  btn.addEventListener('click', function() {
+    if (!btn.classList.contains('armed')) {
+      btn.classList.add('armed');
+      setTimeout(function(){ btn.classList.remove('armed'); }, 2500);
+      return;
+    }
+    showConfirm('Cancellare tutto lo storico?<br>I dati non potranno essere recuperati.', function() {
+      try { localStorage.removeItem(HIST_SK); } catch(e) {}
+      renderHistory();
+    });
+  });
+}
+
+/* ── CONFIRM MODAL HELPER ── */
+var _confirmCallback = null;
+function showConfirm(msg, onOk) {
+  _confirmCallback = onOk;
+  var sub = document.getElementById('confirm-sub-text');
+  if (sub) sub.innerHTML = msg || 'Continuare?';
+  document.getElementById('confirm-overlay').classList.add('open');
+}
+document.getElementById('confirm-cancel').addEventListener('click', function() {
+  document.getElementById('confirm-overlay').classList.remove('open');
+  _confirmCallback = null;
+});
+document.getElementById('confirm-ok').addEventListener('click', function() {
+  document.getElementById('confirm-overlay').classList.remove('open');
+  if (_confirmCallback) { _confirmCallback(); _confirmCallback = null; }
+});
+// close on overlay click
+document.getElementById('confirm-overlay').addEventListener('click', function(e) {
+  if (e.target === this) { this.classList.remove('open'); _confirmCallback = null; }
+});
+
+/* ── SESSION CHRONO HELPERS ── */
+function _updateFloatingChrono(sid, elapsed) {
+  var m = Math.floor(elapsed / 60);
+  var s = elapsed % 60;
+  var txt = String(m).padStart(2,'0') + ':' + String(s).padStart(2,'0');
+  var pill = document.getElementById('floating-chrono');
+  var valEl = document.getElementById('floating-chrono-val');
+  var sidEl = document.getElementById('floating-chrono-sid');
+  if (valEl) valEl.textContent = txt;
+  if (sidEl) sidEl.textContent = sid ? sid.toUpperCase() : '';
+  if (pill) pill.classList.toggle('visible', !!sid && elapsed >= 0);
+  /* legacy compat: also update hidden spans for endSessionAndSave */
+  var legEl = document.getElementById('chrono-val-'+sid);
+  if (legEl) legEl.textContent = txt;
+}
+function startSessionChrono(sid) {
+  stopSessionChrono();
+  currentSession   = sid;
+  sessionActive    = true;
+  sessionStartTime = Date.now();
+  _updateFloatingChrono(sid, 0);
+  _chronoInterval = setInterval(function() {
+    var elapsed = Math.floor((Date.now() - sessionStartTime) / 1000);
+    _updateFloatingChrono(sid, elapsed);
+  }, 1000);
+}
+function stopSessionChrono() {
+  if (_chronoInterval) { clearInterval(_chronoInterval); _chronoInterval = null; }
+  var pill = document.getElementById('floating-chrono');
+  if (pill) pill.classList.remove('visible');
+  sessionActive = false;
+}
+function resetSessionState() {
+  stopSessionChrono();
+  sessionStartTime = null;
+  currentSession   = null;
+}
+function _updateChronoDisplay(sid, elapsed) {
+  /* kept for endSessionAndSave compatibility */
+  var m = Math.floor(elapsed / 60);
+  var s = elapsed % 60;
+  var txt = String(m).padStart(2,'0') + ':' + String(s).padStart(2,'0');
+  var el = document.getElementById('chrono-val-'+sid);
+  if (el) el.textContent = txt;
+  /* also update floating pill with final time */
+  var valEl = document.getElementById('floating-chrono-val');
+  if (valEl) valEl.textContent = txt;
+}
+function endSessionAndSave(sid) {
+  if (!sessionActive || currentSession !== sid || sessionStartTime === null) return;
+  var elapsed = Math.floor((Date.now() - sessionStartTime) / 1000);
+  stopSessionChrono();
+  var m = Math.floor(elapsed / 60);
+  var s = elapsed % 60;
+  var dur = m > 0 ? m + ' min ' + s + ' s' : s + ' s';
+  var now = new Date();
+  var dd = String(now.getDate()).padStart(2,'0');
+  var MM = String(now.getMonth()+1).padStart(2,'0');
+  var yyyy = now.getFullYear();
+  var hh = String(now.getHours()).padStart(2,'0');
+  var mm = String(now.getMinutes()).padStart(2,'0');
+  saveHistoryRecord({
+    date: dd + '/' + MM + '/' + yyyy + ' ' + hh + ':' + mm,
+    session: sid.toUpperCase(),
+    duration: dur
+  });
+  // update chrono display with final time
+  _updateChronoDisplay(sid, elapsed);
+  sessionStartTime = null;
+  currentSession   = null;
 }
 
 /* ── TIMER PERSISTENCE HELPERS ── */
@@ -1329,6 +1761,7 @@ function buildAll() {
           var banner = document.getElementById('sb-'+sid);
           if (banner) banner.classList.toggle('show', allDone);
           if (allDone) {
+            endSessionAndSave(sid);
             deactivateFocus();
             setTimeout(function(){
               var bannerEl = document.getElementById('sb-'+sid);
@@ -1346,6 +1779,14 @@ function buildAll() {
         document.getElementById('cp-'+k).addEventListener('click', function(e) {
           if ((counters[k]||0) >= maxSets) return;
           counters[k] = (counters[k]||0) + 1;
+
+          /* ── session chrono: start if first action, reset if different session ── */
+          if (!sessionActive) {
+            startSessionChrono(sid);
+          } else if (currentSession !== sid) {
+            resetSessionState();
+            startSessionChrono(sid);
+          }
 
           /* ripple + spring */
           addRipple(this, e);
@@ -1519,6 +1960,44 @@ function buildAll() {
         if (sbrEl && !sbrEl._bound) {
           sbrEl._bound = true;
           sbrEl.addEventListener('click', function() {
+            showConfirm('Ricominciare la sessione <b>' + sid.toUpperCase() + '</b>?<br>I progressi attuali andranno persi.', function() {
+              resetSessionState();
+              /* reset chrono display */
+              var cv = document.getElementById('chrono-val-'+sid);
+              if (cv) cv.textContent = '00:00';
+              var ch = document.getElementById('chrono-'+sid);
+              if (ch) ch.classList.add('inactive');
+              DATA[sid].forEach(function(_, i) {
+                var kk = sid+'-'+i;
+                counters[kk] = 0;
+                stopRecoveryTimer(kk);
+                var cardEl = document.getElementById('ctr-'+kk);
+                if (cardEl) {
+                  var ce = cardEl.closest('.ex-card');
+                  ce.classList.remove('ex-completed');
+                  if (ce.classList.contains('completed-hide')) {
+                    ce.classList.remove('completed-hide');
+                    hiddenCount = Math.max(0, hiddenCount - 1);
+                  }
+                }
+                var maxS = Number((loadSt()[kk] || {}).sets) || DATA[sid][i].sets;
+                updateCounter(kk, maxS);
+              });
+              document.getElementById('sb-'+sid).classList.remove('show');
+              updateResetBar();
+              deactivateFocus();
+            });
+          });
+        }
+
+        /* session finish button */
+        var sbfEl = document.getElementById('sbf-'+sid);
+        if (sbfEl && !sbfEl._bound) {
+          sbfEl._bound = true;
+          sbfEl.addEventListener('click', function() {
+            showToast('🏆 Allenamento salvato!');
+            document.getElementById('sb-'+sid).classList.remove('show');
+            resetSessionState();
             DATA[sid].forEach(function(_, i) {
               var kk = sid+'-'+i;
               counters[kk] = 0;
@@ -1535,7 +2014,10 @@ function buildAll() {
               var maxS = Number((loadSt()[kk] || {}).sets) || DATA[sid][i].sets;
               updateCounter(kk, maxS);
             });
-            document.getElementById('sb-'+sid).classList.remove('show');
+            var cv = document.getElementById('chrono-val-'+sid);
+            if (cv) cv.textContent = '00:00';
+            var ch = document.getElementById('chrono-'+sid);
+            if (ch) ch.classList.add('inactive');
             updateResetBar();
             deactivateFocus();
           });
@@ -1551,11 +2033,20 @@ document.getElementById('tabs').addEventListener('click', function(e) {
   var btn = e.target.closest('[data-tab]');
   if (!btn) return;
   var id = btn.getAttribute('data-tab');
+
+  /* if switching away from active session → abort chrono (no save) */
+  if (sessionActive && currentSession && id !== currentSession) {
+    resetSessionState();
+  }
+
   document.querySelectorAll('.tab').forEach(function(t){ t.classList.remove('on'); });
   document.querySelectorAll('.panel').forEach(function(p){ p.classList.remove('on'); });
   btn.classList.add('on');
   document.getElementById('panel-'+id).classList.add('on');
   deactivateFocus();
+
+  /* render history when switching to history tab */
+  if (id === 'history') renderHistory();
 });
 
 /* ── CLOSE WEIGHT POPOVERS on outside click ── */
@@ -1567,24 +2058,31 @@ document.addEventListener('click', function(e) {
 
 /* ── RESET SESSIONE (reset bar) ── */
 document.getElementById('btn-reset-session').addEventListener('click', function() {
-  /* show all hidden cards */
-  showAllCards();
-  /* reset all counters across all sessions */
-  ['a','b','c','d'].forEach(function(sid) {
-    DATA[sid].forEach(function(ex, i) {
-      var k = sid+'-'+i;
-      counters[k] = 0;
-      stopRecoveryTimer(k);
-      var maxS = Number((loadSt()[k] || {}).sets) || ex.sets;
-      updateCounter(k, maxS);
-      /* remove ex-completed */
-      var cardEl = document.getElementById('ctr-'+k);
-      if (cardEl) cardEl.closest('.ex-card').classList.remove('ex-completed');
+  showConfirm('Resettare tutti i progressi?<br>Tutti gli esercizi verranno azzerati.', function() {
+    resetSessionState();
+    /* reset all chrono displays */
+    ['a','b','c','d'].forEach(function(s) {
+      var cv = document.getElementById('chrono-val-'+s);
+      if (cv) cv.textContent = '00:00';
+      var ch = document.getElementById('chrono-'+s);
+      if (ch) ch.classList.add('inactive');
     });
-    var sb = document.getElementById('sb-'+sid);
-    if (sb) sb.classList.remove('show');
+    showAllCards();
+    ['a','b','c','d'].forEach(function(sid) {
+      DATA[sid].forEach(function(ex, i) {
+        var k = sid+'-'+i;
+        counters[k] = 0;
+        stopRecoveryTimer(k);
+        var maxS = Number((loadSt()[k] || {}).sets) || ex.sets;
+        updateCounter(k, maxS);
+        var cardEl = document.getElementById('ctr-'+k);
+        if (cardEl) cardEl.closest('.ex-card').classList.remove('ex-completed');
+      });
+      var sb = document.getElementById('sb-'+sid);
+      if (sb) sb.classList.remove('show');
+    });
+    deactivateFocus();
   });
-  deactivateFocus();
 });
 
 /* ── INSTALL BANNER ── */
