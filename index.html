@@ -649,6 +649,24 @@ body.focus-active .ex-card.focus-card {
 footer { text-align:center; margin-top:52px; font-size:11px; color:#2e2e42; line-height:2; }
 footer a { color:var(--blue); text-decoration:none; }
 
+/* ── Timer badge accanto alle reps ── */
+.timer-pill {
+  display:inline-flex; align-items:center; gap:6px;
+  background:rgba(71,184,255,.07); border:1px solid rgba(71,184,255,.22);
+  border-radius:99px; padding:5px 11px;
+  font-size:11px; font-weight:700; color:var(--blue);
+  white-space:nowrap;
+}
+.timer-pill-lbl {
+  font-size:9px; font-weight:700; letter-spacing:1px;
+  text-transform:uppercase; color:var(--muted);
+}
+.timer-pill-val { font-variant-numeric:tabular-nums; color:var(--blue); }
+.timer-pill-icon {
+  width:12px; height:12px; flex-shrink:0; display:block;
+  shape-rendering:geometricPrecision;
+}
+
 /* ═══ RECOVERY TIMER ═══ */
 .recovery-timer {
   display:none; align-items:center; gap:10px;
@@ -1204,7 +1222,17 @@ function buildAll() {
       html += '</div>';
 
       /* reps + weight + note pills */
+      /* SVG stopwatch outline — minimalista, 1em, currentColor */
+      /* SVG stopwatch — outline minimalista 12px, currentColor */
+      var svgWatch = '<svg class="timer-pill-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">'
+        + '<circle cx="12" cy="14" r="7"/>'
+        + '<path d="M12 10.5v3.5l2 2"/>'
+        + '<path d="M10 3h4"/>'
+        + '<path d="M12 3v2.5"/>'
+        + '<path d="M16.5 5.5l1 1"/>'
+        + '</svg>';
       html += '<div class="ex-pills">';
+      html += '<div class="timer-pill" id="tb-'+key+'">'+svgWatch+'<span class="timer-pill-lbl">Timer&nbsp;</span><span class="timer-pill-val">'+initTimerSecs+'s</span></div>';
       html += '<div class="pill"><span class="pill-lbl">Reps&nbsp;</span><span id="dr-'+key+'">'+esc(reps)+'</span></div>';
 
       /* PILLAR 4: weight tracking pill */
@@ -1393,7 +1421,10 @@ function buildAll() {
           document.querySelectorAll('.weight-popover.open').forEach(function(p){ p.classList.remove('open'); });
           if (!isOpen) {
             pop.classList.add('open');
-            setTimeout(function(){ document.getElementById('win-'+k).focus(); }, 80);
+            /* auto-clear il valore precedente così l'utente può digitare subito */
+            var winEl = document.getElementById('win-'+k);
+            winEl.value = '';
+            setTimeout(function(){ winEl.focus(); }, 80);
           }
         });
         document.getElementById('wok-'+k).addEventListener('click', function() {
@@ -1454,6 +1485,12 @@ function buildAll() {
           }
 
           document.getElementById('dr-'+k).textContent = r;
+          /* aggiorna il timer pill (preserva l'SVG, aggiorna solo il valore) */
+          var tbEl = document.getElementById('tb-'+k);
+          if (tbEl) {
+            var valEl = tbEl.querySelector('.timer-pill-val');
+            if (valEl) valEl.textContent = rcVal + 's';
+          }
           var nd = document.getElementById('dn-'+k);
           nd.textContent = n ? '📝 '+n : '';
           nd.style.display = n ? '' : 'none';
