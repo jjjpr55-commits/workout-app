@@ -2938,9 +2938,7 @@ function startRecoveryTimer(key, endTimeOverride, totalOverride) {
     var st3 = loadSt()[key] || {};
     _repsTracker[key] = st3.repsCurrent !== undefined ? parseInt(st3.repsCurrent, 10) : defReps;
   }
-  /* sync pill stepper */
-  var drEl = document.getElementById('dr-'+key);
-  if (drEl) drEl.textContent = _repsTracker[key];
+  /* la pill bianca dr- mostra sempre il range teorico, non va sovrascritta */
 
   /* ── Init reps-done display with last logged set's reps ── */
   var doneEl = document.getElementById('rtdn-'+key);
@@ -3422,8 +3420,7 @@ function buildAll() {
           var savedReps = st0.repsCurrent;
           var defR = savedReps !== undefined ? parseInt(savedReps, 10) : (parseInt(st0.reps || ex.reps || '10', 10) || 10);
           if (_repsTracker[k] === undefined) _repsTracker[k] = defR;
-          var drEl = document.getElementById('dr-'+k);
-          if (drEl) drEl.textContent = _repsTracker[k];
+          /* la pill dr- mostra il range teorico — non sovrascrivere */
         })();
 
         /* minus */
