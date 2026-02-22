@@ -1912,7 +1912,7 @@ function showToast(msg) {
 
 
 /* ── HISTORY HELPERS ── */
-var HIST_SK = 'wk_history';
+var HIST_SK = 'wk_history_v2';
 function loadHistory() {
   try { return JSON.parse(localStorage.getItem(HIST_SK)) || []; } catch(e) { return []; }
 }
@@ -3178,6 +3178,13 @@ function buildAll() {
       }
       html += '</div>';
 
+      /* ── Reps fatte widget (sempre visibile, si attiva dopo il primo set) ── */
+      html += '<div class="rt-reps-done-wrap" id="rdw-'+key+'" style="opacity:.35;transition:opacity .3s">';
+      html += '<button class="rt-reps-done-adj" id="rtdm-'+key+'" type="button">−</button>';
+      html += '<div class="rt-reps-done-center"><span class="rt-reps-done-num" id="rtdn-'+key+'">'+esc(reps.split('-')[0])+'</span><span class="rt-reps-done-lbl">reps fatte</span></div>';
+      html += '<button class="rt-reps-done-adj" id="rtdp-'+key+'" type="button">+</button>';
+      html += '</div>';
+
       /* reps + weight + note pills */
       /* SVG stopwatch — outline minimalista 12px, currentColor */
       var svgWatch = '<svg class="timer-pill-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">'
@@ -3249,12 +3256,6 @@ function buildAll() {
       html += '<div class="rt-ring-bg"></div>';
       html += '<div class="rt-ring-progress" id="rtr-'+key+'" style="--prog:360deg"></div>';
       html += '<div class="rt-ring-inner"><span class="rt-secs" id="rts-'+key+'">'+initTimerSecs+'</span></div>';
-      html += '</div>';
-      /* ── REPS FATTE stepper (modifica retroattiva l'ultimo set loggato) ── */
-      html += '<div class="rt-reps-done-wrap">';
-      html += '<button class="rt-reps-done-adj" id="rtdm-'+key+'" type="button">−</button>';
-      html += '<div class="rt-reps-done-center"><span class="rt-reps-done-num" id="rtdn-'+key+'">—</span><span class="rt-reps-done-lbl">reps fatte</span></div>';
-      html += '<button class="rt-reps-done-adj" id="rtdp-'+key+'" type="button">+</button>';
       html += '</div>';
       html += '<div class="rt-body">';
       html += '<div class="rt-label">⏱ Recupero</div>';
@@ -3348,6 +3349,13 @@ function buildAll() {
           var currentWeight = sv2.weight ? parseFloat(sv2.weight) : null;
           _logSet(k, currentReps, currentWeight);
           _updateLiveChips(k);
+
+          /* ── Attiva il widget reps fatte alla prima pressione ── */
+          var rdwEl = document.getElementById('rdw-'+k);
+          if (rdwEl) rdwEl.style.opacity = '1';
+          /* Aggiorna il numero mostrato con le reps appena loggato */
+          var doneEl2 = document.getElementById('rtdn-'+k);
+          if (doneEl2) doneEl2.textContent = currentReps;
 
           /* ── session chrono: start if first action, reset if different session ── */
           if (!sessionActive) {
@@ -3754,6 +3762,11 @@ document.getElementById('btn-reset-session').addEventListener('click', function(
         updateCounter(k, maxS);
         var cardEl = document.getElementById('ctr-'+k);
         if (cardEl) cardEl.closest('.ex-card').classList.remove('ex-completed');
+        /* Reset reps widget */
+        var rdwResetEl = document.getElementById('rdw-'+k);
+        if (rdwResetEl) rdwResetEl.style.opacity = '.35';
+        var rtdnResetEl = document.getElementById('rtdn-'+k);
+        if (rtdnResetEl) { var exObj = DATA[k.split('-')[0]] && DATA[k.split('-')[0]][parseInt(k.split('-')[1])]; rtdnResetEl.textContent = exObj ? exObj.reps.split('-')[0] : '—'; }
         /* Clear live chips */
         var chips = document.getElementById('live-chips-'+k);
         if (chips) chips.innerHTML = '';
