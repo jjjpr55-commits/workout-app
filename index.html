@@ -3119,7 +3119,12 @@ function buildAll() {
       var key  = sid+'-'+i;
       var sv   = store[key] || {};
       var sets = sv.sets !== undefined ? Number(sv.sets) : ex.sets;
-      var reps = sv.reps !== undefined ? sv.reps : ex.reps;
+      /* Usa sempre il range completo (es. "8-12"): se localStorage ha salvato
+         solo un intero (bug vecchie versioni) cade back sull'esercizio di default */
+      var savedRepsStr = sv.reps !== undefined ? String(sv.reps) : '';
+      var reps = (savedRepsStr && savedRepsStr.indexOf('-') !== -1) ? savedRepsStr
+               : (savedRepsStr && savedRepsStr.match(/\d+s?$/)) ? savedRepsStr
+               : ex.reps;
       var notes = sv.notes || '';
       var initTimerSecs = (sv.recovery && Number(sv.recovery) >= 10) ? Number(sv.recovery) : RECOVERY_SECS;
       counters[key] = 0;
