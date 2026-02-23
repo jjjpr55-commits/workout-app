@@ -661,251 +661,412 @@ footer { text-align:center; margin-top:52px; font-size:11px; color:#2e2e42; line
 footer a { color:var(--blue); text-decoration:none; }
 
 /* ═══════════════════════════════════════
-   HISTORY ANALYTICS — v2
+   HISTORY v3 — Diario / Trend
    ═══════════════════════════════════════ */
 
-/* ── SUB-TABS (Panoramica / Esercizi / Sessioni) ── */
-.hist-subtabs {
-  display:flex; gap:6px; margin-bottom:24px;
-  border-bottom:1px solid var(--border); padding-bottom:0;
-}
-.hist-stab {
-  background:none; border:none; cursor:pointer;
-  font-family:'Barlow Condensed', sans-serif;
-  font-size:13px; font-weight:700; letter-spacing:1.5px; text-transform:uppercase;
-  color:var(--muted); padding:10px 16px;
-  border-bottom:2px solid transparent; margin-bottom:-1px;
-  transition:color .18s, border-color .18s;
-  -webkit-user-select:none; user-select:none;
-}
-.hist-stab.on { color:var(--lime); border-bottom-color:var(--lime); }
-.hist-stab:active { opacity:.7; }
-
-/* ── STATS SUMMARY GRID ── */
-.stats-grid {
-  display:grid; grid-template-columns:repeat(3,1fr); gap:10px;
+/* ── SEGMENTED CONTROL (iOS style) ── */
+.seg-control {
+  display:grid; grid-template-columns:1fr 1fr;
+  background:rgba(255,255,255,.05);
+  border:1px solid var(--border-strong);
+  border-radius:14px; padding:4px; gap:4px;
   margin-bottom:24px;
 }
-@media(max-width:480px){ .stats-grid{ grid-template-columns:repeat(2,1fr); } }
-.stat-card {
-  background:var(--card); border:1px solid var(--border); border-radius:16px;
-  padding:14px 14px 12px; backdrop-filter:var(--glass-blur);
-  -webkit-backdrop-filter:var(--glass-blur);
-  box-shadow:var(--shadow-card); position:relative; overflow:hidden;
-  transition:border-color .2s;
-}
-.stat-card:hover { border-color:var(--border-strong); }
-.stat-card-icon { font-size:18px; margin-bottom:6px; display:block; }
-.stat-card-val {
+.seg-btn {
+  background:none; border:none; cursor:pointer;
   font-family:'Barlow Condensed', sans-serif;
-  font-size:28px; font-weight:900; color:var(--text); line-height:1;
-  letter-spacing:-.5px; font-variant-numeric:tabular-nums;
+  font-size:14px; font-weight:800; letter-spacing:1.5px; text-transform:uppercase;
+  color:var(--muted); padding:10px 8px; border-radius:10px;
+  transition:all .2s cubic-bezier(.22,.61,.36,1);
+  -webkit-user-select:none; user-select:none;
 }
-.stat-card-val.accent-lime { color:var(--lime); }
-.stat-card-val.accent-blue { color:var(--blue); }
-.stat-card-val.accent-purple { color:var(--purple); }
-.stat-card-lbl {
-  font-size:9px; font-weight:700; letter-spacing:2px; text-transform:uppercase;
-  color:var(--muted); margin-top:4px;
+.seg-btn.on {
+  background:var(--lime); color:#000;
+  box-shadow:0 2px 10px rgba(200,255,71,.35);
 }
-.stat-card-sub { font-size:10px; color:var(--text-sub); margin-top:2px; }
-.stat-card-wide { grid-column:1/-1; }
+.seg-btn:not(.on):active { background:rgba(255,255,255,.07); }
 
-/* ── STREAK BLOCK ── */
-.streak-row {
-  display:grid; grid-template-columns:1fr 1fr; gap:10px; margin-bottom:24px;
+/* ── HIST VIEW PANELS ── */
+.hist-view { display:none; }
+.hist-view.on { display:block; animation:panelSlideIn .28s cubic-bezier(.22,.61,.36,1); }
+
+/* ── WEEK STRIP CALENDAR ── */
+.week-strip-wrap {
+  margin-bottom:20px;
 }
-@media(max-width:380px){ .streak-row{ grid-template-columns:1fr; } }
-.streak-card {
-  background:var(--card); border:1px solid var(--border); border-radius:16px;
-  padding:16px; backdrop-filter:var(--glass-blur); -webkit-backdrop-filter:var(--glass-blur);
+.week-strip-header {
+  display:flex; align-items:center; justify-content:space-between; margin-bottom:10px;
+}
+.week-strip-lbl {
+  font-size:10px; font-weight:700; letter-spacing:2px; text-transform:uppercase; color:var(--muted);
+}
+.week-strip-month {
+  font-family:'Barlow Condensed', sans-serif;
+  font-size:16px; font-weight:900; color:var(--text); letter-spacing:-.2px;
+}
+.week-strip-nav { display:flex; gap:6px; align-items:center; }
+.wsnav-btn {
+  background:rgba(255,255,255,.05); border:1px solid var(--border); color:var(--muted);
+  width:28px; height:28px; border-radius:8px; cursor:pointer; font-size:14px;
+  display:flex; align-items:center; justify-content:center; transition:all .15s;
+  -webkit-user-select:none; user-select:none;
+}
+.wsnav-btn:active { background:var(--border); color:var(--text); }
+.week-strip {
+  display:grid; grid-template-columns:repeat(7,1fr); gap:4px;
+}
+.ws-day {
+  display:flex; flex-direction:column; align-items:center; gap:4px;
+  padding:8px 4px; border-radius:12px; position:relative;
+  transition:background .15s;
+}
+.ws-day-lbl {
+  font-size:9px; font-weight:700; letter-spacing:1px; text-transform:uppercase;
+  color:var(--muted);
+}
+.ws-day-num {
+  font-family:'Barlow Condensed', sans-serif;
+  font-size:16px; font-weight:900; color:var(--muted); line-height:1;
+}
+.ws-day.today .ws-day-num { color:var(--text); }
+.ws-day.today .ws-day-lbl { color:var(--text-sub); }
+.ws-day.trained {
+  background:rgba(200,255,71,.12);
+}
+.ws-day-dot {
+  width:6px; height:6px; border-radius:50%;
+  background:transparent;
+}
+.ws-day.trained .ws-day-dot { background:var(--lime); box-shadow:0 0 6px rgba(200,255,71,.8); }
+.ws-day.trained .ws-day-num { color:var(--lime); }
+.ws-day.trained .ws-day-lbl { color:var(--lime); opacity:.7; }
+.ws-day.today.trained {
+  background:rgba(200,255,71,.2);
+}
+.ws-day-sid {
+  font-size:7px; font-weight:900; color:rgba(200,255,71,.6); letter-spacing:.5px;
+  position:absolute; bottom:3px; right:4px;
+}
+.week-strip-stats {
+  display:flex; gap:8px; margin-top:10px;
+}
+.ws-stat {
+  flex:1; background:rgba(255,255,255,.03); border:1px solid var(--border);
+  border-radius:10px; padding:8px 10px; text-align:center;
+}
+.ws-stat-val {
+  font-family:'Barlow Condensed', sans-serif;
+  font-size:20px; font-weight:900; line-height:1;
+}
+.ws-stat-lbl { font-size:8px; font-weight:700; letter-spacing:1.5px; text-transform:uppercase; color:var(--muted); margin-top:2px; }
+
+/* ── DIARY CARD LIST ── */
+.diary-list { display:flex; flex-direction:column; gap:10px; }
+.diary-card {
+  border-radius:18px; overflow:hidden;
+  background:var(--card); border:1px solid var(--border);
+  backdrop-filter:var(--glass-blur); -webkit-backdrop-filter:var(--glass-blur);
   box-shadow:var(--shadow-card);
+  transition:border-color .2s;
+  position:relative;
 }
-.streak-big {
+.diary-card:hover { border-color:var(--border-strong); }
+.diary-card.has-pr {
+  border-color:rgba(200,255,71,.35);
+}
+.diary-card-header {
+  display:flex; align-items:center; gap:12px; padding:14px 16px;
+  cursor:pointer; -webkit-user-select:none; user-select:none;
+}
+.diary-card-header:active { opacity:.85; }
+.diary-sess-badge {
+  width:36px; height:36px; border-radius:50%; flex-shrink:0;
+  display:flex; align-items:center; justify-content:center;
+  font-family:'Barlow Condensed', sans-serif; font-size:16px; font-weight:900;
+}
+.dsb-a { background:rgba(200,255,71,.15); border:1.5px solid rgba(200,255,71,.45); color:var(--lime); }
+.dsb-b { background:rgba(71,184,255,.15); border:1.5px solid rgba(71,184,255,.45); color:var(--blue); }
+.dsb-c { background:rgba(168,85,247,.15); border:1.5px solid rgba(168,85,247,.45); color:var(--purple); }
+.dsb-d { background:rgba(255,165,71,.15); border:1.5px solid rgba(255,165,71,.45); color:#ffa547; }
+.diary-card-info { flex:1; min-width:0; }
+.diary-card-name { font-size:14px; font-weight:700; color:var(--text); margin-bottom:2px; }
+.diary-card-date { font-size:11px; color:var(--muted); }
+.diary-card-right {
+  display:flex; flex-direction:column; align-items:flex-end; gap:3px; flex-shrink:0;
+}
+.diary-dur {
   font-family:'Barlow Condensed', sans-serif;
-  font-size:48px; font-weight:900; line-height:.9; letter-spacing:-2px;
-  color:var(--lime);
+  font-size:18px; font-weight:900; color:var(--text); line-height:1;
+  font-variant-numeric:tabular-nums;
 }
-.streak-unit {
+.diary-vol {
+  font-size:10px; color:var(--text-sub); font-variant-numeric:tabular-nums;
+}
+.diary-vol span {
   font-family:'Barlow Condensed', sans-serif;
-  font-size:14px; font-weight:700; letter-spacing:2px; text-transform:uppercase;
-  color:var(--muted); display:block; margin-top:4px;
+  font-weight:900; color:var(--blue);
 }
-.streak-sub { font-size:11px; color:var(--text-sub); margin-top:6px; }
-.progress-bar-wrap { margin-top:10px; }
-.progress-bar-lbl {
-  display:flex; justify-content:space-between;
-  font-size:9px; font-weight:700; letter-spacing:1.5px; text-transform:uppercase;
-  color:var(--muted); margin-bottom:6px;
+.diary-pr-badge {
+  display:inline-flex; align-items:center; gap:3px;
+  position:absolute; top:10px; right:10px;
+  background:linear-gradient(135deg,#ffd700,#ffaa00);
+  border-radius:99px; padding:3px 8px;
+  font-size:9px; font-weight:900; color:#000; letter-spacing:.5px;
+  box-shadow:0 2px 8px rgba(255,210,0,.4);
+  animation:badgePop .4s cubic-bezier(.34,1.56,.64,1);
 }
-.progress-bar-track {
-  height:6px; border-radius:99px; background:rgba(255,255,255,.07); overflow:hidden;
+.diary-expand-icon {
+  font-size:12px; color:var(--muted); flex-shrink:0;
+  transition:transform .25s cubic-bezier(.22,.61,.36,1);
 }
-.progress-bar-fill {
-  height:100%; border-radius:99px;
-  background:linear-gradient(90deg,var(--lime),#7bffcc);
-  transition:width .6s cubic-bezier(.22,.61,.36,1);
+.diary-card.open .diary-expand-icon { transform:rotate(180deg); }
+.diary-card-body {
+  display:none;
+  border-top:1px solid var(--border);
+  padding:14px 16px 16px;
+  animation:fadeUp .2s ease;
 }
+.diary-card.open .diary-card-body { display:block; }
+/* Set chips in expanded body */
+.diary-ex-section { margin-bottom:12px; }
+.diary-ex-name {
+  font-size:11px; font-weight:700; color:var(--text);
+  margin-bottom:6px; display:flex; align-items:center; justify-content:space-between;
+}
+.diary-ex-pr-tag {
+  font-size:8px; font-weight:900; color:var(--lime); letter-spacing:1px;
+  background:rgba(200,255,71,.12); border:1px solid rgba(200,255,71,.3);
+  border-radius:4px; padding:1px 5px;
+}
+.diary-set-chips { display:flex; flex-wrap:wrap; gap:5px; }
+.diary-set-chip {
+  background:rgba(255,255,255,.05); border:1px solid var(--border);
+  border-radius:7px; padding:3px 9px;
+  font-family:'Barlow Condensed', sans-serif;
+  font-size:12px; font-weight:700; color:var(--text-sub);
+}
+.diary-set-chip.pr { background:rgba(200,255,71,.1); border-color:rgba(200,255,71,.3); color:var(--lime); }
+/* Compare strip */
+.diary-compare-strip {
+  display:flex; gap:6px; flex-wrap:wrap; margin-bottom:12px; padding-bottom:12px;
+  border-bottom:1px solid rgba(255,255,255,.05);
+}
+.diary-cmp-pill {
+  display:inline-flex; align-items:center; gap:4px;
+  background:rgba(255,255,255,.04); border:1px solid var(--border);
+  border-radius:8px; padding:4px 10px;
+  font-size:10px; font-weight:700; color:var(--text-sub);
+}
+.diary-cmp-pill.pos { color:var(--lime); background:rgba(200,255,71,.07); border-color:rgba(200,255,71,.2); }
+.diary-cmp-pill.neg { color:#ef4444; background:rgba(239,68,68,.06); border-color:rgba(239,68,68,.2); }
+.diary-cmp-label { font-size:8px; text-transform:uppercase; letter-spacing:1px; color:var(--muted); }
 
-/* ── HEATMAP ── */
+/* ── TREND VIEW ── */
+.trend-ex-picker {
+  margin-bottom:20px;
+}
+.trend-picker-lbl {
+  font-size:10px; font-weight:700; letter-spacing:2px; text-transform:uppercase;
+  color:var(--muted); margin-bottom:10px; display:block;
+}
+.trend-ex-grid {
+  display:flex; flex-wrap:wrap; gap:6px;
+}
+.trend-ex-btn {
+  background:rgba(255,255,255,.04); border:1.5px solid var(--border);
+  border-radius:10px; padding:7px 13px; cursor:pointer;
+  font-size:11px; font-weight:700; color:var(--muted);
+  transition:all .15s; -webkit-user-select:none; user-select:none;
+  white-space:nowrap;
+}
+.trend-ex-btn:active { transform:scale(.96); }
+.trend-ex-btn.sel {
+  background:rgba(200,255,71,.12); border-color:rgba(200,255,71,.4); color:var(--lime);
+}
+/* Big chart area */
+.trend-chart-wrap {
+  background:var(--card); border:1px solid var(--border);
+  border-radius:20px; padding:20px 16px 16px;
+  backdrop-filter:var(--glass-blur); -webkit-backdrop-filter:var(--glass-blur);
+  box-shadow:var(--shadow-card); margin-bottom:20px;
+}
+.trend-chart-header {
+  display:flex; align-items:flex-start; justify-content:space-between; margin-bottom:16px;
+}
+.trend-chart-name {
+  font-family:'Barlow Condensed', sans-serif;
+  font-size:22px; font-weight:900; color:var(--text); letter-spacing:-.3px; line-height:1;
+}
+.trend-chart-sub {
+  font-size:10px; color:var(--muted); margin-top:3px; letter-spacing:.5px; text-transform:uppercase; font-weight:700;
+}
+.trend-chart-pr {
+  text-align:right;
+}
+.trend-chart-pr-val {
+  font-family:'Barlow Condensed', sans-serif;
+  font-size:28px; font-weight:900; color:var(--lime); line-height:1;
+}
+.trend-chart-pr-lbl {
+  font-size:8px; font-weight:700; letter-spacing:1.5px; text-transform:uppercase; color:var(--muted);
+}
+.trend-svg-wrap {
+  width:100%; position:relative;
+  border-bottom:1px solid rgba(255,255,255,.06);
+  margin-bottom:8px;
+}
+.trend-svg {
+  width:100%; overflow:visible;
+  display:block;
+}
+/* Y-axis grid lines */
+.trend-grid-line { stroke:rgba(255,255,255,.05); stroke-width:1; }
+.trend-grid-lbl {
+  fill:rgba(255,255,255,.2); font-size:9px; font-family:'Barlow',sans-serif;
+  font-weight:600;
+}
+/* chart path */
+.trend-area { opacity:1; }
+.trend-line { fill:none; stroke:var(--lime); stroke-width:2.5; stroke-linecap:round; stroke-linejoin:round; }
+.trend-dot { transition:r .15s; cursor:pointer; }
+.trend-dot:hover { r:6; }
+/* tooltip */
+.trend-tooltip {
+  display:none; position:absolute; pointer-events:none;
+  background:rgba(10,10,20,.95); border:1px solid rgba(200,255,71,.35);
+  border-radius:10px; padding:8px 12px;
+  box-shadow:0 8px 24px rgba(0,0,0,.6);
+  white-space:nowrap; z-index:100;
+  animation:popIn .15s ease;
+}
+.trend-tooltip.show { display:block; }
+.trend-tooltip-val {
+  font-family:'Barlow Condensed', sans-serif;
+  font-size:18px; font-weight:900; color:var(--lime);
+}
+.trend-tooltip-date { font-size:10px; color:var(--muted); margin-top:2px; }
+/* X-axis labels */
+.trend-x-labels {
+  display:flex; justify-content:space-between;
+  font-size:9px; color:var(--muted); font-weight:600; letter-spacing:.5px;
+  padding:0 2px;
+}
+/* No data state */
+.trend-empty {
+  text-align:center; padding:48px 20px;
+  font-size:13px; color:var(--muted); line-height:2;
+}
+.trend-empty-icon { display:block; font-size:36px; margin-bottom:10px; }
+/* PR list under chart */
+.trend-pr-list { display:flex; flex-direction:column; gap:8px; margin-top:4px; }
+.trend-pr-row {
+  display:flex; align-items:center; gap:10px;
+  background:rgba(200,255,71,.05); border:1px solid rgba(200,255,71,.15);
+  border-radius:12px; padding:10px 14px;
+}
+.trend-pr-icon { font-size:18px; flex-shrink:0; }
+.trend-pr-info { flex:1; min-width:0; }
+.trend-pr-name { font-size:12px; font-weight:700; color:var(--text); margin-bottom:1px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+.trend-pr-detail { font-size:10px; color:var(--muted); }
+.trend-pr-weight {
+  font-family:'Barlow Condensed', sans-serif;
+  font-size:22px; font-weight:900; color:var(--lime);
+}
+.trend-pr-kg { font-size:11px; font-weight:700; color:var(--muted); }
+
+/* ── hist actions row ── */
+.hist-actions-row { display:flex; align-items:center; justify-content:flex-end; gap:8px; margin-bottom:16px; flex-wrap:wrap; }
+.btn-hist-action {
+  display:inline-flex; align-items:center; gap:5px;
+  background:rgba(71,184,255,.08); border:1px solid rgba(71,184,255,.25);
+  border-radius:99px; padding:7px 14px;
+  color:var(--blue); font-family:'Barlow Condensed', sans-serif;
+  font-size:12px; font-weight:800; letter-spacing:1.5px; text-transform:uppercase;
+  cursor:pointer; min-height:36px;
+  transition:background .15s, border-color .15s;
+  -webkit-user-select:none; user-select:none;
+}
+.btn-hist-action:active { background:rgba(71,184,255,.2); }
+.btn-clear-history {
+  background:none; border:none; cursor:pointer;
+  display:inline-flex; align-items:center; gap:6px;
+  font-size:11px; font-weight:600; letter-spacing:.5px;
+  color:var(--muted); padding:6px 10px; border-radius:8px;
+  transition:color .2s, background .2s;
+  -webkit-user-select:none; user-select:none;
+}
+.btn-clear-history:hover { color:rgba(239,68,68,.7); background:rgba(239,68,68,.07); }
+.btn-clear-history.armed { color:rgba(239,68,68,.9); background:rgba(239,68,68,.12); }
+.btn-clear-history svg { width:13px; height:13px; flex-shrink:0; }
+
+/* ── EMPTY STATE ── */
+.analytics-empty {
+  text-align:center; padding:40px 20px;
+  font-size:13px; color:var(--muted); line-height:2;
+}
+.analytics-empty-icon { display:block; font-size:36px; margin-bottom:10px; }
+
+/* ── QUAL FORM (preserved) ── */
+.qual-section { margin-top:14px; padding-top:14px; border-top:1px solid var(--border); }
+.qual-title {
+  font-size:9px; font-weight:700; letter-spacing:2px; text-transform:uppercase;
+  color:var(--muted); margin-bottom:10px;
+}
+.qual-row { display:grid; grid-template-columns:repeat(2,1fr); gap:8px; margin-bottom:10px; }
+.qual-field label {
+  display:block; font-size:9px; font-weight:700; letter-spacing:1.5px;
+  text-transform:uppercase; color:var(--text-sub); margin-bottom:6px;
+}
+.qual-stars { display:flex; gap:4px; }
+.qual-star {
+  font-size:18px; cursor:pointer; opacity:.3; transition:opacity .15s, transform .15s;
+  -webkit-user-select:none; user-select:none;
+}
+.qual-star.filled { opacity:1; transform:scale(1.1); }
+.qual-star:active { transform:scale(.85); }
+.qual-note-input {
+  width:100%; background:rgba(255,255,255,.04); border:1px solid var(--border);
+  border-radius:10px; padding:8px 10px; color:var(--text); font-size:12px;
+  font-family:'Barlow', sans-serif; resize:none; outline:none;
+  transition:border-color .15s;
+}
+.qual-note-input:focus { border-color:rgba(71,184,255,.4); }
+.qual-save-btn {
+  background:rgba(71,184,255,.12); border:1px solid rgba(71,184,255,.3);
+  border-radius:99px; padding:7px 18px; color:var(--blue);
+  font-family:'Barlow Condensed', sans-serif; font-size:11px; font-weight:800;
+  letter-spacing:2px; text-transform:uppercase; cursor:pointer; margin-top:8px;
+  transition:background .15s;
+}
+.qual-save-btn:active { background:rgba(71,184,255,.25); }
+
+/* ── HEATMAP (kept for reference in trend) ── */
 .heatmap-wrap { margin-bottom:24px; }
 .heatmap-title {
   font-size:10px; font-weight:700; letter-spacing:2px; text-transform:uppercase;
   color:var(--muted); margin-bottom:12px;
 }
 .heatmap-scroll { overflow-x:auto; padding-bottom:4px; }
-.heatmap-grid {
-  display:flex; gap:3px; min-width:max-content;
-}
+.heatmap-grid { display:flex; gap:3px; min-width:max-content; }
 .heatmap-week { display:flex; flex-direction:column; gap:3px; }
 .heatmap-cell {
   width:12px; height:12px; border-radius:3px;
-  background:rgba(255,255,255,.05);
-  transition:transform .15s;
-  cursor:default;
+  background:rgba(255,255,255,.05); transition:transform .15s; cursor:default;
 }
 .heatmap-cell[data-level="1"] { background:rgba(200,255,71,.38); }
 .heatmap-cell[data-level="2"] { background:rgba(200,255,71,.55); }
 .heatmap-cell[data-level="3"] { background:rgba(200,255,71,.85); }
 .heatmap-cell:hover { transform:scale(1.4); }
-.heatmap-month-labels {
-  display:flex; gap:3px; min-width:max-content;
-  font-size:8px; color:var(--muted); margin-bottom:4px;
-}
-.heatmap-month-label { font-size:8px; font-weight:700; color:var(--muted); }
 
-/* ── EXERCISE PROGRESS CARDS ── */
-.ex-prog-list { display:flex; flex-direction:column; gap:12px; }
-.ex-prog-card {
-  background:var(--card); border:1px solid var(--border); border-radius:16px;
-  padding:16px 18px; backdrop-filter:var(--glass-blur);
-  -webkit-backdrop-filter:var(--glass-blur); box-shadow:var(--shadow-card);
-  cursor:pointer; transition:border-color .2s, box-shadow .2s;
-}
-.ex-prog-card:hover {
-  border-color:var(--border-strong);
-  box-shadow:0 4px 20px rgba(0,0,0,.5);
-}
-.ex-prog-header { display:flex; align-items:flex-start; justify-content:space-between; gap:12px; margin-bottom:12px; }
-.ex-prog-name { font-size:14px; font-weight:700; color:var(--text); margin-bottom:2px; }
-.ex-prog-muscle { font-size:10px; font-weight:700; letter-spacing:1.5px; text-transform:uppercase; color:var(--muted); }
-.ex-prog-trend {
-  font-family:'Barlow Condensed', sans-serif;
-  font-size:20px; font-weight:900; flex-shrink:0; line-height:1;
-}
-.trend-up { color:var(--lime); }
-.trend-down { color:#ef4444; }
-.trend-flat { color:var(--muted); }
-.ex-prog-metrics { display:grid; grid-template-columns:repeat(3,1fr); gap:8px; margin-bottom:12px; }
-.ex-prog-metric-val {
-  font-family:'Barlow Condensed', sans-serif;
-  font-size:22px; font-weight:900; color:var(--text); line-height:1;
-}
-.ex-prog-metric-lbl { font-size:8px; font-weight:700; letter-spacing:1.5px; text-transform:uppercase; color:var(--muted); margin-top:2px; }
-.ex-prog-badge {
-  display:inline-flex; align-items:center; gap:5px;
-  background:rgba(200,255,71,.1); border:1px solid rgba(200,255,71,.25);
-  border-radius:99px; padding:4px 10px;
-  font-size:10px; font-weight:700; color:var(--lime); letter-spacing:.5px;
-}
-.ex-prog-badge.bad {
-  background:rgba(239,68,68,.08); border-color:rgba(239,68,68,.25); color:#ef4444;
-}
-.ex-prog-badge.neutral {
-  background:rgba(255,255,255,.05); border-color:var(--border); color:var(--muted);
-}
-/* mini sparkline */
-.sparkline { display:flex; align-items:flex-end; gap:3px; height:28px; margin-top:12px; }
-.spark-bar {
-  flex:1; min-width:6px; border-radius:3px 3px 0 0;
-  background:rgba(71,184,255,.25); position:relative;
-  transition:background .2s;
-}
-.spark-bar.peak { background:var(--lime); }
-.spark-bar:last-child { background:var(--blue); }
-
-/* ── SESSION HISTORY LIST ── */
-.sess-list { display:flex; flex-direction:column; gap:10px; }
-.sess-entry {
-  background:var(--card); border:1px solid var(--border); border-radius:16px;
-  backdrop-filter:var(--glass-blur); -webkit-backdrop-filter:var(--glass-blur);
-  box-shadow:var(--shadow-card); overflow:hidden;
-  cursor:pointer; transition:border-color .2s;
-}
-.sess-entry:hover { border-color:var(--border-strong); }
-.sess-entry-header {
-  display:flex; align-items:center; gap:12px; padding:14px 16px;
-}
-.sess-node {
-  width:32px; height:32px; border-radius:50%; flex-shrink:0;
-  display:flex; align-items:center; justify-content:center;
-  font-family:'Barlow Condensed', sans-serif; font-size:14px; font-weight:900;
-}
-.sess-node-a { background:rgba(200,255,71,.15); border:1.5px solid rgba(200,255,71,.45); color:var(--lime); }
-.sess-node-b { background:rgba(71,184,255,.15); border:1.5px solid rgba(71,184,255,.45); color:var(--blue); }
-.sess-node-c { background:rgba(168,85,247,.15); border:1.5px solid rgba(168,85,247,.45); color:var(--purple); }
-.sess-node-d { background:rgba(255,165,71,.15); border:1.5px solid rgba(255,165,71,.45); color:#ffa547; }
-.sess-info { flex:1; min-width:0; }
-.sess-name { font-size:13px; font-weight:700; color:var(--text); margin-bottom:2px; }
-.sess-date { font-size:11px; color:var(--muted); }
-.sess-dur-badge {
-  display:flex; flex-direction:column; align-items:flex-end; gap:1px; flex-shrink:0;
-}
-.sess-dur-val {
-  font-family:'Barlow Condensed', sans-serif;
-  font-size:20px; font-weight:900; color:var(--text); line-height:1;
-  font-variant-numeric:tabular-nums;
-}
-.sess-dur-lbl { font-size:8px; font-weight:700; letter-spacing:1.5px; text-transform:uppercase; color:var(--muted); }
-.sess-score-badge {
-  background:rgba(200,255,71,.1); border:1px solid rgba(200,255,71,.25);
-  border-radius:99px; padding:3px 10px;
-  font-family:'Barlow Condensed', sans-serif;
-  font-size:12px; font-weight:800; color:var(--lime); letter-spacing:.5px;
-  flex-shrink:0;
-}
-/* session detail expand */
-.sess-detail {
-  display:none; padding:0 16px 16px;
-  border-top:1px solid var(--border);
-  animation:fadeUp .22s ease;
-}
-.sess-detail.open { display:block; }
-.sess-compare-grid {
-  display:grid; grid-template-columns:repeat(3,1fr); gap:8px; margin-bottom:14px;
-}
-.cmp-card {
-  background:rgba(255,255,255,.03); border:1px solid var(--border); border-radius:12px;
-  padding:10px 10px 8px;
-}
-.cmp-val {
-  font-family:'Barlow Condensed', sans-serif; font-size:18px; font-weight:900; line-height:1;
-  color:var(--text); font-variant-numeric:tabular-nums;
-}
-.cmp-val.pos { color:var(--lime); }
-.cmp-val.neg { color:#ef4444; }
-.cmp-lbl { font-size:8px; font-weight:700; letter-spacing:1.5px; text-transform:uppercase; color:var(--muted); margin-top:3px; }
-.sess-ex-table { width:100%; border-collapse:collapse; margin-top:10px; }
-.sess-ex-table th {
-  font-size:8px; font-weight:700; letter-spacing:2px; text-transform:uppercase;
-  color:var(--muted); text-align:left; padding:0 0 8px 0; border-bottom:1px solid var(--border);
-}
-.sess-ex-table td {
-  font-size:12px; color:var(--text-sub); padding:6px 0;
-  border-bottom:1px solid rgba(255,255,255,.04);
-  vertical-align:middle;
-}
-.sess-ex-table tr:last-child td { border-bottom:none; }
-.sess-ex-table td:first-child { color:var(--text); font-weight:600; font-size:11px; }
-.sess-ex-weight {
-  font-family:'Barlow Condensed', sans-serif; font-size:14px; font-weight:900;
-  color:var(--blue);
-}
-.sess-ex-pr {
-  display:inline-block; background:rgba(200,255,71,.15);
-  border-radius:4px; padding:1px 5px;
-  font-size:9px; font-weight:800; color:var(--lime); letter-spacing:1px;
-}
+/* mini sparkline — SVG line chart (in trend exercise cards) */
+.sparkline-svg-wrap { margin-top:12px; width:100%; height:52px; position:relative; }
+.sparkline-svg { width:100%; height:100%; overflow:visible; }
+.sparkline-svg .spk-line { fill:none; stroke:var(--lime); stroke-width:1.8; stroke-linecap:round; stroke-linejoin:round; }
+.sparkline-svg .spk-dot { fill:var(--bg); stroke:var(--lime); stroke-width:1.8; }
+.sparkline-svg .spk-dot.peak { fill:var(--lime); }
+.sparkline-svg .spk-dot.last { fill:var(--blue); stroke:var(--blue); }
+.sparkline-lbl-row { display:flex; justify-content:space-between; margin-top:2px; }
+.sparkline-lbl { font-size:8px; color:var(--muted); font-variant-numeric:tabular-nums; }
 
 /* ── QUALITATIVE FORM ── */
 .qual-section { margin-top:14px; padding-top:14px; border-top:1px solid var(--border); }
@@ -1919,7 +2080,7 @@ function loadHistory() {
 function saveHistoryRecord(record) {
   try {
     var h = loadHistory();
-    h.unshift(record);          // prepend — most recent first
+    h.unshift(record);
     localStorage.setItem(HIST_SK, JSON.stringify(h));
   } catch(e) {}
 }
@@ -1961,476 +2122,456 @@ function _computeStreak(h) {
   }
   return streak;
 }
-function _exProgressMap(h) {
-  var map = {}; /* name → [{date, weight, sets}] */
+
+/* ── WEEK STRIP (7-day horizontal strip, Mon-Sun) ── */
+var _wsOffset = 0; /* weeks offset from current: 0=this week, -1=last week, etc */
+var _DAYS_SHORT = ['Lu','Ma','Me','Gi','Ve','Sa','Do'];
+var _MONTHS_IT = ['Gen','Feb','Mar','Apr','Mag','Giu','Lug','Ago','Set','Ott','Nov','Dic'];
+
+function _buildWeekStrip(h, weekOffset) {
+  weekOffset = weekOffset || 0;
+  var today = new Date();
+  /* Find Monday of current week */
+  var dow = (today.getDay() + 6) % 7; /* 0=Mon */
+  var monOfWeek = new Date(today);
+  monOfWeek.setDate(today.getDate() - dow + weekOffset * 7);
+  monOfWeek.setHours(0,0,0,0);
+
+  /* Build trainedDays map */
+  var trainedDays = {}; /* isoDate → [sids] */
   h.forEach(function(r) {
-    (r.exercises || []).forEach(function(ex) {
-      if (!map[ex.name]) map[ex.name] = { muscle: ex.muscle, entries: [] };
-      map[ex.name].entries.push({
-        ts: _parseDateTs(r), session: r.session,
-        weight: ex.weight || null, sets: ex.sets || 0, reps: ex.reps || ''
+    var d = new Date(_parseDateTs(r));
+    d.setHours(0,0,0,0);
+    var key = d.getTime();
+    if (!trainedDays[key]) trainedDays[key] = [];
+    trainedDays[key].push((r.session||'A').toUpperCase());
+  });
+
+  var sunOfWeek = new Date(monOfWeek);
+  sunOfWeek.setDate(monOfWeek.getDate() + 6);
+  var monthLbl = _MONTHS_IT[monOfWeek.getMonth()] + (monOfWeek.getMonth() !== sunOfWeek.getMonth() ? '–' + _MONTHS_IT[sunOfWeek.getMonth()] : '') + ' ' + monOfWeek.getFullYear();
+
+  var html = '<div class="week-strip-wrap" id="ws-wrap">';
+  html += '<div class="week-strip-header">';
+  html += '<div>';
+  html += '<div class="week-strip-lbl">'+( weekOffset===0 ? 'Questa settimana' : weekOffset===-1 ? 'Settimana scorsa' : 'Settimana del')+'</div>';
+  html += '<div class="week-strip-month">'+monthLbl+'</div>';
+  html += '</div>';
+  html += '<div class="week-strip-nav">';
+  html += '<button class="wsnav-btn" id="ws-prev" type="button">‹</button>';
+  html += '<button class="wsnav-btn" id="ws-today" type="button" style="font-size:10px;font-weight:800;letter-spacing:1px;width:auto;padding:0 8px">OGG</button>';
+  html += '<button class="wsnav-btn" id="ws-next" type="button">›</button>';
+  html += '</div>';
+  html += '</div>';
+
+  html += '<div class="week-strip">';
+  var todayKey = new Date(today.getFullYear(), today.getMonth(), today.getDate()).getTime();
+  var weekSessions = 0;
+  var weekDays = 0;
+  for (var d=0; d<7; d++) {
+    var day = new Date(monOfWeek);
+    day.setDate(monOfWeek.getDate() + d);
+    var key = day.getTime();
+    var isFuture = key > todayKey;
+    var isToday = key === todayKey;
+    var trained = !isFuture && trainedDays[key];
+    if (trained) { weekSessions += trained.length; weekDays++; }
+    var cls = 'ws-day';
+    if (isToday) cls += ' today';
+    if (trained) cls += ' trained';
+    if (isFuture) cls += ' future';
+    html += '<div class="'+cls+'">';
+    html += '<div class="ws-day-lbl">'+_DAYS_SHORT[d]+'</div>';
+    html += '<div class="ws-day-num">'+day.getDate()+'</div>';
+    html += '<div class="ws-day-dot"></div>';
+    if (trained) html += '<div class="ws-day-sid">'+trained.join('')+'</div>';
+    html += '</div>';
+  }
+  html += '</div>';
+
+  /* Stats strip */
+  var streak = _computeStreak(h);
+  html += '<div class="week-strip-stats">';
+  html += '<div class="ws-stat"><div class="ws-stat-val" style="color:var(--lime)">'+weekSessions+'</div><div class="ws-stat-lbl">Sett.</div></div>';
+  html += '<div class="ws-stat"><div class="ws-stat-val" style="color:var(--blue)">'+h.length+'</div><div class="ws-stat-lbl">Totali</div></div>';
+  html += '<div class="ws-stat"><div class="ws-stat-val" style="color:var(--lime)">'+streak+'🔥</div><div class="ws-stat-lbl">Streak</div></div>';
+  html += '</div>';
+  html += '</div>'; /* /week-strip-wrap */
+  return html;
+}
+
+/* ── SESSION VOLUME HELPER ── */
+function _sessVol(r) {
+  var vol = 0;
+  (r.exercises||[]).forEach(function(ex) {
+    (ex.setsLog||[]).forEach(function(s){ if(s.weight&&s.reps) vol += s.weight*s.reps; });
+    if (!vol && ex.weight && ex.sets) vol += ex.weight * ex.sets * (parseInt(ex.reps)||10);
+  });
+  return vol;
+}
+
+/* ── SESSION HAS PR? ── */
+function _sessHasPR(r, h) {
+  var hasPR = false;
+  (r.exercises||[]).forEach(function(ex) {
+    var sessMax = ex.weight || 0;
+    (ex.setsLog||[]).forEach(function(s){ if(s.weight&&s.weight>sessMax) sessMax=s.weight; });
+    if (!sessMax) return;
+    var prevMax = 0;
+    h.forEach(function(rr) {
+      if (rr === r) return;
+      (rr.exercises||[]).forEach(function(ee) {
+        if (ee.name !== ex.name) return;
+        var w = ee.weight || 0;
+        (ee.setsLog||[]).forEach(function(s){ if(s.weight&&s.weight>w) w=s.weight; });
+        if (w > prevMax) prevMax = w;
       });
     });
+    if (sessMax > prevMax) hasPR = true;
   });
-  /* Sort entries ascending by ts */
-  Object.keys(map).forEach(function(n) {
-    map[n].entries.sort(function(a,b){ return a.ts - b.ts; });
-  });
-  return map;
-}
-function _getMuscleCounts(h) {
-  var c = {};
-  h.forEach(function(r) {
-    (r.exercises || []).forEach(function(ex) {
-      var m = (ex.muscle || '').split('·')[0].trim();
-      c[m] = (c[m]||0) + 1;
-    });
-  });
-  return c;
-}
-function _topKey(obj) {
-  return Object.keys(obj).reduce(function(a,b){ return obj[a]>=obj[b]?a:b; }, '');
-}
-function _avgScore(h) {
-  var sc = h.filter(function(r){ return r.score; }).map(function(r){ return r.score; });
-  if (!sc.length) return null;
-  return Math.round(sc.reduce(function(a,b){return a+b;},0)/sc.length);
+  return hasPR;
 }
 
-function renderHistory() {
-  var el = document.getElementById('history-content');
-  if (!el) return;
-  var h = loadHistory();
+/* ── BUILD DIARY VIEW ── */
+function _buildDiaryView(h) {
+  var html = '<div class="hist-view on" id="hv-diary">';
 
-  /* Build sub-tabs */
-  var html = '<div class="hist-subtabs">';
-  html += '<button class="hist-stab on" data-stab="overview" type="button">📊 Panoramica</button>';
-  html += '<button class="hist-stab" data-stab="exercises" type="button">💪 Esercizi</button>';
-  html += '<button class="hist-stab" data-stab="sessions" type="button">📋 Sessioni</button>';
-  html += '</div>';
+  /* Week strip */
+  html += _buildWeekStrip(h, _wsOffset);
 
-  /* Clear button */
-  html += '<div class="hist-actions-row">';
-  html += '<button class="btn-hist-action" id="btn-export-hist" type="button">';
-  html += '⬇ Esporta</button>';
-  html += '<label class="btn-hist-action" id="btn-import-label" style="cursor:pointer">';
-  html += '⬆ Importa<input type="file" id="btn-import-hist" accept=".json" style="display:none"></label>';
-  html += '<button class="btn-clear-history" id="btn-clear-hist" type="button">';
-  html += '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:12px;height:12px;margin-right:4px"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 01-2 2H8a2 2 0 01-2-2L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/><path d="M9 6V4a1 1 0 011-1h4a1 1 0 011 1v2"/></svg>';
-  html += 'Cancella tutto</button>';
-  html += '</div>';
+  /* Session list */
+  html += '<div class="diary-list" id="diary-list">';
 
   if (!h.length) {
-    html += '<div class="analytics-empty"><span class="analytics-empty-icon">📭</span>Nessun allenamento salvato ancora.<br>Completa una sessione per vedere le analisi!</div>';
-    el.innerHTML = html;
-    _bindHistControls();
-    return;
+    html += '<div class="analytics-empty"><span class="analytics-empty-icon">📭</span>Nessun allenamento salvato.<br>Completa la tua prima sessione!</div>';
+    html += '</div></div>';
+    return html;
   }
 
-  /* ════ OVERVIEW PANEL ════ */
-  var totalSecs = h.reduce(function(acc,r){ return acc + _parseDurSecs(r); }, 0);
-  var avgSecs = Math.round(totalSecs / h.length);
-  var maxSecs = Math.max.apply(null, h.map(function(r){ return _parseDurSecs(r); }));
-  var maxSessR = h.find(function(r){ return _parseDurSecs(r) === maxSecs; });
-  var muscleCounts = _getMuscleCounts(h);
-  var topMuscle = Object.keys(muscleCounts).length ? _topKey(muscleCounts) : '—';
-  var exCounts = {};
-  h.forEach(function(r){ (r.exercises||[]).forEach(function(e){ exCounts[e.name]=(exCounts[e.name]||0)+1; }); });
-  var topEx = Object.keys(exCounts).length ? _topKey(exCounts) : '—';
-  var totalVolume = 0;
-  h.forEach(function(r){ (r.exercises||[]).forEach(function(e){ if(e.weight&&e.sets){ var reps=parseInt(e.reps)||10; totalVolume += e.weight*e.sets*reps; } }); });
-  var streak = _computeStreak(h);
-  /* This month */
-  var now = new Date();
-  var thisMonth = h.filter(function(r){ var d=new Date(_parseDateTs(r)); return d.getMonth()===now.getMonth()&&d.getFullYear()===now.getFullYear(); }).length;
-  /* Weekly avg (last 4 weeks) */
-  var fourWeeksAgo = Date.now() - 28*86400000;
-  var recentCount = h.filter(function(r){ return _parseDateTs(r) >= fourWeeksAgo; }).length;
-  var weeklyAvg = (recentCount / 4).toFixed(1);
-  /* Goal: 4/week = 100% */
-  var weeklyGoal = 4;
-  var weeklyPct = Math.min(100, Math.round(parseFloat(weeklyAvg)/weeklyGoal*100));
-  var avgScore = _avgScore(h);
-
-  var ov = '';
-  ov += '<div class="hist-subpanel on" id="stab-overview">';
-
-  /* Stats grid */
-  ov += '<div class="stats-grid">';
-  ov += '<div class="stat-card"><span class="stat-card-icon">🏋️</span><div class="stat-card-val accent-lime">'+h.length+'</div><div class="stat-card-lbl">Sessioni Totali</div></div>';
-  ov += '<div class="stat-card"><span class="stat-card-icon">⏱</span><div class="stat-card-val accent-blue">'+Math.round(totalSecs/3600*10)/10+'</div><div class="stat-card-lbl">Ore Totali</div></div>';
-  ov += '<div class="stat-card"><span class="stat-card-icon">📐</span><div class="stat-card-val">'+_fmtDur(avgSecs)+'</div><div class="stat-card-lbl">Durata Media</div></div>';
-  ov += '<div class="stat-card"><span class="stat-card-icon">🔥</span><div class="stat-card-val">'+_fmtDur(maxSecs)+'</div><div class="stat-card-lbl">Sessione più lunga</div><div class="stat-card-sub">'+(maxSessR?'Session '+maxSessR.session:'')+'</div></div>';
-  ov += '<div class="stat-card"><span class="stat-card-icon">💪</span><div class="stat-card-val accent-purple" style="font-size:16px;padding-top:4px;">'+topMuscle+'</div><div class="stat-card-lbl">Muscolo più allenato</div></div>';
-  if (totalVolume > 0) {
-    var volDisplay = totalVolume >= 1000 ? (Math.round(totalVolume/100)/10)+'t' : totalVolume+'kg';
-    ov += '<div class="stat-card"><span class="stat-card-icon">📦</span><div class="stat-card-val" style="font-size:20px;">'+volDisplay+'</div><div class="stat-card-lbl">Volume Totale</div></div>';
-  }
-  if (avgScore) {
-    ov += '<div class="stat-card"><span class="stat-card-icon">⭐</span>';
-    ov += '<div class="score-ring-wrap">';
-    ov += '<div class="score-ring" style="--score-deg:'+Math.round(avgScore/100*360)+'deg">';
-    ov += '<div class="score-ring-inner"><div class="score-ring-val">'+avgScore+'</div><div class="score-ring-lbl">/100</div></div>';
-    ov += '</div>';
-    ov += '<div><div class="stat-card-val" style="font-size:14px;color:var(--lime)">Score Medio <span class="score-info-icon" title="Come si calcola lo score:\n• Durata allenamento (max 30pt)\n• Esercizi con peso tracciato (max 40pt)\n• Miglioramento peso vs sessione precedente (+15pt)\n• Numero esercizi completati (max 15pt)\nLo score varia da 0 a 100.">ⓘ</span></div><div class="stat-card-lbl">ultimi workout</div></div>';
-    ov += '</div></div>';
-  }
-  ov += '</div>'; /* /stats-grid */
-
-  /* Streak */
-  ov += '<div class="streak-row">';
-  ov += '<div class="streak-card"><div class="streak-big">'+streak+'</div><span class="streak-unit">Streak Days</span><div class="streak-sub">'+(streak>0?'🔥 Continua così!':'Allena oggi per iniziare!')+'</div></div>';
-  ov += '<div class="streak-card">';
-  ov += '<div class="streak-big" style="font-size:36px;color:var(--blue)">'+weeklyAvg+'</div>';
-  ov += '<span class="streak-unit" style="color:var(--blue)">Sessioni/Settimana</span>';
-  ov += '<div class="streak-sub">'+thisMonth+' questo mese</div>';
-  ov += '<div class="progress-bar-wrap">';
-  ov += '<div class="progress-bar-lbl"><span>Obiettivo sett.</span><span>'+weeklyPct+'%</span></div>';
-  ov += '<div class="progress-bar-track"><div class="progress-bar-fill" style="width:'+weeklyPct+'%"></div></div>';
-  ov += '</div>';
-  ov += '</div>';
-  ov += '</div>'; /* /streak-row */
-
-  /* Heatmap (last 16 weeks) */
-  ov += '<div class="heatmap-wrap">';
-  ov += '<div class="heatmap-title">📅 Calendario Allenamenti — ultime 16 settimane</div>';
-  ov += _buildHeatmap(h);
-  ov += '</div>';
-
-  ov += '</div>'; /* /stab-overview */
-
-  /* ════ EXERCISE PANEL ════ */
-  /* Build per-session exercise progress maps directly from history */
-  var groupDefs = [
-    { id:'A', label:'Session A', sub:'Chest & Biceps',    badgeClass:'group-badge-a' },
-    { id:'B', label:'Session B', sub:'Legs',               badgeClass:'group-badge-b' },
-    { id:'C', label:'Session C', sub:'Back & Triceps',     badgeClass:'group-badge-c' },
-    { id:'D', label:'Session D', sub:'Shoulders & Abs',    badgeClass:'group-badge-d' }
-  ];
-
-  /* Build per-group progMap: groupId → { exName → {muscle, entries[]} } */
-  var groupProgMaps = { A:{}, B:{}, C:{}, D:{} };
-  h.forEach(function(r) {
-    var sid = (r.session || '').toUpperCase();
-    if (!groupProgMaps[sid]) return;
-    (r.exercises || []).forEach(function(ex) {
-      if (!groupProgMaps[sid][ex.name]) {
-        groupProgMaps[sid][ex.name] = { muscle: ex.muscle, entries: [] };
-      }
-      groupProgMaps[sid][ex.name].entries.push({
-        ts: _parseDateTs(r),
-        weight: ex.weight || null,
-        sets: ex.sets || 0,
-        reps: ex.reps || '',
-        setsLog: ex.setsLog || []
-      });
-    });
-  });
-  /* Sort entries asc by ts in each group */
-  Object.keys(groupProgMaps).forEach(function(sid) {
-    Object.keys(groupProgMaps[sid]).forEach(function(name) {
-      groupProgMaps[sid][name].entries.sort(function(a,b){ return a.ts - b.ts; });
-    });
-  });
-
-  function _buildExCard(name, info) {
-    var entries = info.entries.filter(function(e){ return e.weight; });
-    var allEntries = info.entries;
-    var weights = entries.map(function(e){ return e.weight; });
-
-    /* Compute PR from setsLog if available */
-    var maxW = null;
-    var prDate = null;
-    allEntries.forEach(function(e) {
-      var w = e.weight || 0;
-      (e.setsLog||[]).forEach(function(s){ if(s.weight && s.weight > w) w = s.weight; });
-      if (w > 0 && (maxW === null || w > maxW)) {
-        maxW = w;
-        prDate = e.ts;
-      }
-    });
-    if (maxW === null && weights.length) maxW = Math.max.apply(null, weights);
-
-    /* Compute avg reps from setsLog */
-    var allRepsArr = [];
-    allEntries.forEach(function(e) {
-      (e.setsLog||[]).forEach(function(s){ if(s.reps) allRepsArr.push(s.reps); });
-    });
-    var avgRepsNum = allRepsArr.length ? Math.round(allRepsArr.reduce(function(a,b){return a+b;},0)/allRepsArr.length*10)/10 : null;
-    var avgRepsDisp = avgRepsNum !== null ? avgRepsNum : (allEntries.length ? (allEntries[allEntries.length-1].reps || '—') : '—');
-
-    var lastW = weights.length ? weights[weights.length-1] : null;
-    var firstW = weights.length ? weights[0] : null;
-    var totalSessions = allEntries.length;
-    var trend = '→'; var trendClass = 'trend-flat';
-    if (weights.length >= 2) {
-      if (weights[weights.length-1] > weights[weights.length-2]) { trend='↑'; trendClass='trend-up'; }
-      else if (weights[weights.length-1] < weights[weights.length-2]) { trend='↓'; trendClass='trend-down'; }
-    }
-    var vsLast = '';
-    if (weights.length >= 2) {
-      var diff = Math.round((lastW - firstW)*10)/10;
-      vsLast = (diff >= 0 ? '+' : '') + diff + 'kg totale';
-    }
-
-    /* Compute total volume */
-    var totalVol = 0;
-    allEntries.forEach(function(e) {
-      (e.setsLog||[]).forEach(function(s){ if(s.weight&&s.reps) totalVol += s.weight*s.reps; });
-    });
-
-    var c = '<div class="ex-prog-card">';
-    c += '<div class="ex-prog-header"><div>';
-    c += '<div class="ex-prog-name">'+esc(name)+'</div>';
-    c += '<div class="ex-prog-muscle">'+esc(info.muscle)+'</div>';
-    c += '</div><div class="ex-prog-trend '+trendClass+'">'+trend+'</div></div>';
-    c += '<div class="ex-prog-metrics">';
-    c += '<div><div class="ex-prog-metric-val">'+(maxW?maxW+'kg':'—')+'</div><div class="ex-prog-metric-lbl">PR</div></div>';
-    c += '<div><div class="ex-prog-metric-val">'+avgRepsDisp+'</div><div class="ex-prog-metric-lbl">Media Reps</div></div>';
-    c += '<div><div class="ex-prog-metric-val">'+totalSessions+'</div><div class="ex-prog-metric-lbl">Sessioni</div></div>';
-    c += '</div>';
-    if (vsLast) { c += '<span class="ex-prog-badge'+(parseFloat(vsLast)<0?' bad':'')+'">'+esc(vsLast)+'</span> '; }
-    if (trendClass==='trend-up') c += '<span class="ex-prog-badge">↑ Miglioramento</span>';
-    else if (trendClass==='trend-down') c += '<span class="ex-prog-badge bad">↓ Regressione</span>';
-    else c += '<span class="ex-prog-badge neutral">→ Stabile</span>';
-    if (totalVol > 0) {
-      var volDisplay = totalVol >= 1000 ? Math.round(totalVol/100)/10+'t' : totalVol+'kg';
-      c += ' <span class="ex-prog-badge neutral" style="color:var(--blue);border-color:rgba(71,184,255,.3)">📦 '+volDisplay+' vol</span>';
-    }
-    if (totalSessions < 3) {
-      c += '<div style="font-size:10px;color:var(--muted);margin-top:8px">Fai '+Math.max(0,3-totalSessions)+' sessioni per vedere trend</div>';
-    }
-    if (weights.length > 1) {
-      var maxSp = Math.max.apply(null, weights);
-      c += '<div class="sparkline">';
-      weights.forEach(function(w, idx) {
-        var pct = Math.round((w/maxSp)*100);
-        c += '<div class="spark-bar'+(w===maxSp?' peak':'')+(idx===weights.length-1?' last':'')+'" style="height:'+pct+'%"></div>';
-      });
-      c += '</div>';
-    }
-    c += '</div>';
-    return c;
-  }
-
-  var ex = '<div class="hist-subpanel" id="stab-exercises">';
-  groupDefs.forEach(function(grp) {
-    var grpMap = groupProgMaps[grp.id];
-    var grpNames = Object.keys(grpMap);
-    ex += '<div class="ex-prog-group" id="expg-'+grp.id+'">';
-    ex += '<div class="ex-prog-group-header" data-grp="'+grp.id+'">';
-    ex += '<div class="ex-prog-group-badge '+grp.badgeClass+'">'+grp.id+'</div>';
-    ex += '<div class="ex-prog-group-titles">';
-    ex += '<div class="ex-prog-group-name">'+grp.label+'</div>';
-    ex += '<div class="ex-prog-group-sub">'+grp.sub+'</div>';
-    ex += '</div>';
-    ex += '<span class="ex-prog-group-count">'+grpNames.length+' esercizi</span>';
-    ex += '<span class="ex-prog-group-chevron">▼</span>';
-    ex += '</div>';
-    ex += '<div class="ex-prog-group-body">';
-    if (!grpNames.length) {
-      ex += '<div class="ex-prog-group-empty">Nessuna sessione '+grp.id+' completata ancora.</div>';
-    } else {
-      ex += '<div class="ex-prog-list">';
-      grpNames.forEach(function(name) {
-        ex += _buildExCard(name, grpMap[name]);
-      });
-      ex += '</div>';
-    }
-    ex += '</div>'; /* /body */
-    ex += '</div>'; /* /group */
-  });
-  ex += '</div>'; /* /stab-exercises */
-
-  /* ════ SESSIONS PANEL ════ */
-  var ss = '<div class="hist-subpanel" id="stab-sessions">';
-  ss += '<div class="sess-list">';
   h.forEach(function(r, idx) {
-    var sid = (r.session || 'A').toUpperCase();
-    var name = SESSION_NAMES[sid] || ('Session ' + sid);
+    var sid = (r.session||'A').toUpperCase();
+    var name = SESSION_NAMES[sid] || ('Session '+sid);
     var secs = _parseDurSecs(r);
-    var durVal = _fmtDur(secs);
+    var durStr = _fmtDur(secs);
     var durLbl = _fmtDurLbl(secs);
-    var score = r.score || null;
-    /* Find previous same-type session */
-    var prevSame = null;
-    for (var i = idx+1; i < h.length; i++) {
-      if ((h[i].session||'').toUpperCase() === sid && h[i].exercises) { prevSame = h[i]; break; }
-    }
-    ss += '<div class="sess-entry" id="sess-entry-'+idx+'">';
-    ss += '<div class="sess-entry-header">';
-    ss += '<div class="sess-node sess-node-'+sid.toLowerCase()+'">'+sid+'</div>';
-    ss += '<div class="sess-info"><div class="sess-name">Session '+sid+' — '+name+'</div><div class="sess-date">'+r.date+'</div></div>';
-    /* Check if this session has any PRs */
-    var hasPR = false;
-    (r.exercises||[]).forEach(function(ex) {
-      var sessMaxW = ex.weight || 0;
-      (ex.setsLog||[]).forEach(function(s){ if(s.weight && s.weight > sessMaxW) sessMaxW = s.weight; });
-      if (!sessMaxW) return;
-      var prevMaxW = 0;
-      h.forEach(function(rr) {
-        if (rr === r) return;
-        (rr.exercises||[]).forEach(function(ee) {
-          if (ee.name !== ex.name) return;
-          var w = ee.weight || 0;
-          (ee.setsLog||[]).forEach(function(s){ if(s.weight && s.weight > w) w = s.weight; });
-          if (w > prevMaxW) prevMaxW = w;
-        });
-      });
-      if (sessMaxW > prevMaxW) hasPR = true;
-    });
-    if (hasPR) ss += '<span class="sess-pr-badge">🏆 PR</span>';
-    if (score) ss += '<div class="sess-score-badge">'+score+'</div>';
-    ss += '<div class="sess-dur-badge"><div class="sess-dur-val">'+durVal+'</div><div class="sess-dur-lbl">'+durLbl+'</div></div>';
-    ss += '</div>'; /* /header */
+    var vol = _sessVol(r);
+    var volDisp = vol >= 1000 ? (Math.round(vol/100)/10)+'t' : (vol>0 ? vol+'kg' : '—');
+    var hasPR = _sessHasPR(r, h);
 
-    /* Detail expand */
-    ss += '<div class="sess-detail" id="sess-detail-'+idx+'">';
-    /* Comparison with previous */
-    if (prevSame) {
-      var prevSecs = _parseDurSecs(prevSame);
-      var durDiff = secs - prevSecs;
-      var durDiffStr = (durDiff >= 0 ? '+' : '') + _fmtDur(Math.abs(durDiff));
-      /* Volume comparison */
-      var curVol = 0, prevVol = 0;
-      (r.exercises||[]).forEach(function(ex) {
-        (ex.setsLog||[]).forEach(function(s){ if(s.weight&&s.reps) curVol += s.weight*s.reps; });
-        if (!ex.setsLog || !ex.setsLog.length) { if (ex.weight && ex.sets) curVol += ex.weight*ex.sets*(parseInt(ex.reps)||10); }
-      });
-      (prevSame.exercises||[]).forEach(function(ex) {
-        (ex.setsLog||[]).forEach(function(s){ if(s.weight&&s.reps) prevVol += s.weight*s.reps; });
-        if (!ex.setsLog || !ex.setsLog.length) { if (ex.weight && ex.sets) prevVol += ex.weight*ex.sets*(parseInt(ex.reps)||10); }
-      });
-      /* Weight comparison */
-      var weightDiffs = [];
-      (r.exercises||[]).forEach(function(ex) {
-        var pe = (prevSame.exercises||[]).find(function(p){ return p.name === ex.name; });
-        if (pe && ex.weight && pe.weight) weightDiffs.push(ex.weight - pe.weight);
-      });
-      var avgWDiff = weightDiffs.length ? (weightDiffs.reduce(function(a,b){return a+b;},0)/weightDiffs.length) : null;
-      var prevScore = prevSame.score || null;
-      var volDiff = curVol - prevVol;
-      ss += '<div style="font-size:9px;font-weight:700;letter-spacing:2px;text-transform:uppercase;color:var(--muted);margin:12px 0 8px">vs Sessione Precedente</div>';
-      ss += '<div class="sess-compare-grid">';
-      ss += '<div class="cmp-card"><div class="cmp-val '+(durDiff>=0?'pos':'neg')+'">'+durDiffStr+'</div><div class="cmp-lbl">Durata</div></div>';
-      if (avgWDiff !== null) {
-        ss += '<div class="cmp-card"><div class="cmp-val '+(avgWDiff>=0?'pos':'neg')+'">'+(avgWDiff>=0?'+':'')+avgWDiff.toFixed(1)+'kg</div><div class="cmp-lbl">Peso Medio</div></div>';
-      }
-      if (score && prevScore) {
-        var sDiff = score - prevScore;
-        ss += '<div class="cmp-card"><div class="cmp-val '+(sDiff>=0?'pos':'neg')+'">'+(sDiff>=0?'+':'')+sDiff+'</div><div class="cmp-lbl">Score</div></div>';
-      }
-      if (curVol > 0 || prevVol > 0) {
-        ss += '<div class="cmp-card"><div class="cmp-val '+(volDiff>=0?'pos':'neg')+'">'+(volDiff>=0?'+':'')+Math.round(volDiff)+'kg</div><div class="cmp-lbl">Volume</div></div>';
-      }
-      ss += '</div>';
+    /* Date formatting */
+    var ts = _parseDateTs(r);
+    var d = new Date(ts);
+    var dateStr = d.toLocaleDateString('it-IT', { weekday:'long', day:'numeric', month:'long' });
+    /* Capitalize first letter */
+    dateStr = dateStr.charAt(0).toUpperCase() + dateStr.slice(1);
+
+    /* Session badge color class */
+    var dsbClass = 'dsb-' + sid.toLowerCase();
+
+    html += '<div class="diary-card'+(hasPR?' has-pr':'')+'" id="dc-'+idx+'">';
+    if (hasPR) html += '<div class="diary-pr-badge">🏆 PR</div>';
+    html += '<div class="diary-card-header" data-dc="'+idx+'">';
+    html += '<div class="diary-sess-badge '+dsbClass+'">'+sid+'</div>';
+    html += '<div class="diary-card-info"><div class="diary-card-name">'+esc(name)+'</div><div class="diary-card-date">'+esc(dateStr)+'</div></div>';
+    html += '<div class="diary-card-right">';
+    html += '<div class="diary-dur">'+durStr+' <span style="font-size:10px;font-weight:700;color:var(--muted)">'+durLbl+'</span></div>';
+    if (vol > 0) html += '<div class="diary-vol"><span>'+volDisp+'</span> vol</div>';
+    html += '</div>';
+    html += '<div class="diary-expand-icon">▾</div>';
+    html += '</div>'; /* /header */
+
+    /* Body */
+    html += '<div class="diary-card-body" id="dcb-'+idx+'">';
+
+    /* Compare vs previous same-type session */
+    var prevSame = null;
+    for (var i=idx+1; i<h.length; i++) {
+      if ((h[i].session||'').toUpperCase()===sid && h[i].exercises) { prevSame=h[i]; break; }
     }
-    /* Exercise set-by-set table */
+    if (prevSame) {
+      var prevVol = _sessVol(prevSame);
+      var prevSecs = _parseDurSecs(prevSame);
+      var volDiff = vol - prevVol;
+      var durDiff = secs - prevSecs;
+      html += '<div class="diary-compare-strip">';
+      html += '<div class="diary-cmp-pill"><span class="diary-cmp-label">vs precedente&nbsp;</span></div>';
+      if (durDiff !== 0) {
+        var dds = (durDiff>=0?'+':'')+_fmtDur(Math.abs(durDiff));
+        html += '<div class="diary-cmp-pill '+(durDiff>=0?'pos':'neg')+'">⏱ '+dds+'</div>';
+      }
+      if (vol > 0 && prevVol > 0) {
+        var vds = (volDiff>=0?'+':'')+Math.round(volDiff)+'kg';
+        html += '<div class="diary-cmp-pill '+(volDiff>=0?'pos':'neg')+'">📦 '+vds+'</div>';
+      }
+      html += '</div>';
+    }
+
+    /* Exercise detail */
     if (r.exercises && r.exercises.length) {
-      /* Precompute all-time PRs for PR badge detection */
+      /* All-time PRs */
       var allTimePRs = {};
       h.forEach(function(rr) {
         (rr.exercises||[]).forEach(function(ex) {
-          var maxW = ex.weight || 0;
-          (ex.setsLog||[]).forEach(function(s){ if(s.weight && s.weight > maxW) maxW = s.weight; });
-          if (!allTimePRs[ex.name] || maxW > allTimePRs[ex.name]) allTimePRs[ex.name] = maxW;
+          var mw = ex.weight||0;
+          (ex.setsLog||[]).forEach(function(s){ if(s.weight&&s.weight>mw) mw=s.weight; });
+          if (!allTimePRs[ex.name] || mw > allTimePRs[ex.name]) allTimePRs[ex.name] = mw;
         });
       });
 
       r.exercises.forEach(function(ex) {
-        /* Get all previous max weight for this exercise (before this session) */
         var prevMaxW = 0;
         h.forEach(function(rr) {
-          if (rr === r) return;
+          if (rr===r) return;
           (rr.exercises||[]).forEach(function(ee) {
-            if (ee.name !== ex.name) return;
-            var w = ee.weight || 0;
-            (ee.setsLog||[]).forEach(function(s){ if(s.weight && s.weight > w) w = s.weight; });
-            if (w > prevMaxW) prevMaxW = w;
+            if (ee.name!==ex.name) return;
+            var w=ee.weight||0;
+            (ee.setsLog||[]).forEach(function(s){ if(s.weight&&s.weight>w) w=s.weight; });
+            if (w>prevMaxW) prevMaxW=w;
           });
         });
+        var sessMax = ex.weight||0;
+        (ex.setsLog||[]).forEach(function(s){ if(s.weight&&s.weight>sessMax) sessMax=s.weight; });
+        var isExPR = sessMax > 0 && sessMax > prevMaxW;
 
-        var sessMaxW = ex.weight || 0;
-        (ex.setsLog||[]).forEach(function(s){ if(s.weight && s.weight > sessMaxW) sessMaxW = s.weight; });
-        var isExPR = sessMaxW > 0 && sessMaxW > prevMaxW;
-
-        ss += '<div style="margin-top:12px;padding-top:10px;border-top:1px solid rgba(255,255,255,.05)">';
-        ss += '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px">';
-        ss += '<div style="font-size:12px;font-weight:700;color:var(--text)">'+esc(ex.name)+'</div>';
-        if (isExPR) ss += '<span class="sess-pr-badge">🏆 Nuovo PR!</span>';
-        ss += '</div>';
-
+        html += '<div class="diary-ex-section">';
+        html += '<div class="diary-ex-name">'+esc(ex.name);
+        if (isExPR) html += '<span class="diary-ex-pr-tag">🏆 PR</span>';
+        html += '</div>';
         var setsLog = ex.setsLog || [];
-        if (setsLog.length > 0) {
-          ss += '<div class="sess-ex-set-chips">';
+        if (setsLog.length) {
+          html += '<div class="diary-set-chips">';
           setsLog.forEach(function(s, si) {
-            var isSetPR = s.weight && s.weight > prevMaxW;
-            var chipTxt = 'S'+(si+1)+': '+s.reps+'rep'+(s.weight?' @ '+s.weight+'kg':'');
-            ss += '<span class="sess-ex-set-chip'+(isSetPR?' pr-chip':'')+'" title="'+(isSetPR?'Personal Record!':'')+'">'+chipTxt+'</span>';
+            var isPR = s.weight && s.weight > prevMaxW;
+            html += '<span class="diary-set-chip'+(isPR?' pr':'')+'">S'+(si+1)+': '+s.reps+'r'+(s.weight?' @'+s.weight+'kg':'')+'</span>';
           });
-          ss += '</div>';
-          /* Volume for this exercise */
-          var exVol = 0;
-          setsLog.forEach(function(s){ if(s.weight&&s.reps) exVol += s.weight*s.reps; });
-          if (exVol > 0) {
-            ss += '<div style="font-size:10px;color:var(--muted);margin-top:5px">Vol: <span style="color:var(--text-sub);font-variant-numeric:tabular-nums">'+exVol+'kg</span></div>';
-          }
+          html += '</div>';
         } else {
-          /* Fallback: old format */
-          var chipTxt = (ex.sets||'?')+'×'+(ex.reps||'?')+(ex.weight?' @ '+ex.weight+'kg':'');
-          ss += '<div class="sess-ex-set-chips"><span class="sess-ex-set-chip">'+chipTxt+'</span></div>';
+          html += '<div class="diary-set-chips"><span class="diary-set-chip">'+(ex.sets||'?')+'×'+(ex.reps||'?')+(ex.weight?' @'+ex.weight+'kg':'')+'</span></div>';
         }
-        ss += '</div>';
+        html += '</div>';
       });
     }
-    /* Qualitative section */
-    ss += _buildQualSection(r, idx);
-    ss += '</div>'; /* /detail */
-    ss += '</div>'; /* /sess-entry */
-  });
-  ss += '</div>'; /* /sess-list */
-  ss += '</div>'; /* /stab-sessions */
 
-  el.innerHTML = html + ov + ex + ss;
-  _bindHistControls();
-}
-
-function _buildHeatmap(h) {
-  /* Build a 16-week grid */
-  var weeks = 16;
-  var today = new Date();
-  var dayOfWeek = today.getDay(); /* 0=Sun */
-  /* Start from monday of 16 weeks ago */
-  var startDate = new Date(today);
-  startDate.setDate(startDate.getDate() - dayOfWeek + 1 - (weeks-1)*7);
-
-  /* Build set of trained dates */
-  var trainedDays = {};
-  h.forEach(function(r) {
-    var d = new Date(_parseDateTs(r));
-    var key = d.getFullYear()+'-'+(d.getMonth()+1)+'-'+d.getDate();
-    trainedDays[key] = (trainedDays[key]||0)+1;
+    /* Qual section */
+    html += _buildQualSection(r, idx);
+    html += '</div>'; /* /body */
+    html += '</div>'; /* /diary-card */
   });
 
-  var html = '<div class="heatmap-scroll"><div class="heatmap-grid">';
-  for (var w = 0; w < weeks; w++) {
-    html += '<div class="heatmap-week">';
-    for (var d = 0; d < 7; d++) {
-      var cur = new Date(startDate);
-      cur.setDate(startDate.getDate() + w*7 + d);
-      if (cur > today) { html += '<div class="heatmap-cell"></div>'; continue; }
-      var key = cur.getFullYear()+'-'+(cur.getMonth()+1)+'-'+cur.getDate();
-      var count = trainedDays[key] || 0;
-      var level = count === 0 ? 0 : count === 1 ? 2 : 3;
-      var dateStr = cur.toLocaleDateString('it-IT',{day:'2-digit',month:'short'});
-      html += '<div class="heatmap-cell" data-level="'+level+'" title="'+dateStr+(count?' — '+count+' allenamento':' — riposo')+'"></div>';
-    }
-    html += '</div>';
-  }
-  html += '</div></div>';
+  html += '</div>'; /* /diary-list */
+  html += '</div>'; /* /hv-diary */
   return html;
 }
 
+/* ── BUILD TREND VIEW ── */
+var _trendSelectedEx = null;
+
+function _getAllExercises(h) {
+  var map = {}; /* name → {muscle, sid, entries:[{ts,weight}]} */
+  h.forEach(function(r) {
+    var sid = (r.session||'A').toUpperCase();
+    (r.exercises||[]).forEach(function(ex) {
+      if (!map[ex.name]) map[ex.name] = { muscle: ex.muscle, sid: sid, entries: [] };
+      var w = ex.weight || 0;
+      (ex.setsLog||[]).forEach(function(s){ if(s.weight&&s.weight>w) w=s.weight; });
+      if (w > 0) map[ex.name].entries.push({ ts: _parseDateTs(r), weight: w });
+    });
+  });
+  /* Sort entries by ts asc */
+  Object.keys(map).forEach(function(name) {
+    map[name].entries.sort(function(a,b){ return a.ts - b.ts; });
+  });
+  return map;
+}
+
+function _buildTrendChart(exMap, exName) {
+  if (!exName || !exMap[exName]) {
+    return '<div class="trend-empty"><span class="trend-empty-icon">📈</span>Seleziona un esercizio<br>per vedere la progressione</div>';
+  }
+  var info = exMap[exName];
+  var entries = info.entries.filter(function(e){ return e.weight > 0; });
+  if (entries.length < 2) {
+    return '<div class="trend-empty"><span class="trend-empty-icon">📉</span>Servono almeno 2 sessioni<br>con peso registrato</div>';
+  }
+
+  var weights = entries.map(function(e){ return e.weight; });
+  var maxW = Math.max.apply(null, weights);
+  var minW = Math.min.apply(null, weights);
+  var prDate = new Date(entries[entries.length-1].ts);
+
+  /* SVG chart */
+  var svgW = 340, svgH = 160;
+  var padL = 38, padR = 16, padT = 14, padB = 28;
+  var chartW = svgW - padL - padR;
+  var chartH = svgH - padT - padB;
+  var n = entries.length;
+  var wRange = maxW - minW || 1;
+
+  /* Y gridlines */
+  var ySteps = 4;
+  var yStep = Math.ceil(wRange / ySteps / 5) * 5;
+  if (yStep < 1) yStep = 1;
+  var yMin = Math.floor(minW / yStep) * yStep;
+  var yMax = yMin + yStep * (ySteps + 1);
+
+  function toX(i) { return padL + (n === 1 ? chartW/2 : i / (n-1) * chartW); }
+  function toY(w) { return padT + chartH - ((w - yMin) / (yMax - yMin)) * chartH; }
+
+  var pts = entries.map(function(e, i) { return { x: toX(i), y: toY(e.weight), w: e.weight, ts: e.ts }; });
+  var polyline = pts.map(function(p){ return p.x.toFixed(1)+','+p.y.toFixed(1); }).join(' ');
+  var areaPath = 'M'+pts[0].x.toFixed(1)+','+(padT+chartH).toFixed(1) + ' ' +
+    pts.map(function(p){ return 'L'+p.x.toFixed(1)+','+p.y.toFixed(1); }).join(' ') +
+    ' L'+pts[pts.length-1].x.toFixed(1)+','+(padT+chartH).toFixed(1)+' Z';
+  var gradId = 'trendGrad_'+Math.round(Math.random()*999999);
+
+  var html = '<div class="trend-chart-wrap">';
+  html += '<div class="trend-chart-header">';
+  html += '<div><div class="trend-chart-name">'+esc(exName)+'</div>';
+  html += '<div class="trend-chart-sub">'+esc(info.muscle||'')+'</div></div>';
+  html += '<div class="trend-chart-pr"><div class="trend-chart-pr-val">'+maxW+'kg</div><div class="trend-chart-pr-lbl">Record personale</div></div>';
+  html += '</div>';
+
+  html += '<div class="trend-svg-wrap" id="trend-svg-wrap">';
+  html += '<svg class="trend-svg" viewBox="0 0 '+svgW+' '+svgH+'" preserveAspectRatio="xMidYMid meet">';
+  /* Gradient */
+  html += '<defs><linearGradient id="'+gradId+'" x1="0" y1="0" x2="0" y2="1">';
+  html += '<stop offset="0%" stop-color="rgba(200,255,71,.22)"/>';
+  html += '<stop offset="100%" stop-color="rgba(200,255,71,0)"/>';
+  html += '</linearGradient></defs>';
+
+  /* Y grid lines */
+  for (var yi = 0; yi <= ySteps+1; yi++) {
+    var yw = yMin + yi * yStep;
+    var yy = toY(yw);
+    if (yy < padT - 2 || yy > padT + chartH + 2) continue;
+    html += '<line class="trend-grid-line" x1="'+padL+'" y1="'+yy.toFixed(1)+'" x2="'+(svgW-padR)+'" y2="'+yy.toFixed(1)+'"/>';
+    html += '<text class="trend-grid-lbl" x="'+(padL-4).toFixed(1)+'" y="'+(yy+3).toFixed(1)+'" text-anchor="end">'+yw+'</text>';
+  }
+
+  /* Area */
+  html += '<path class="trend-area" d="'+areaPath+'" fill="url(#'+gradId+')"/>';
+  /* Line */
+  html += '<polyline class="trend-line" points="'+polyline+'"/>';
+  /* Dots */
+  pts.forEach(function(p, i) {
+    var isPR = p.w === maxW;
+    var r = isPR ? 5 : 3.5;
+    var fill = isPR ? 'var(--lime)' : 'var(--bg)';
+    var stroke = isPR ? 'var(--lime)' : 'var(--lime)';
+    html += '<circle class="trend-dot" cx="'+p.x.toFixed(1)+'" cy="'+p.y.toFixed(1)+'" r="'+r+'" fill="'+fill+'" stroke="'+stroke+'" stroke-width="2" data-idx="'+i+'" data-w="'+p.w+'" data-ts="'+p.ts+'"><title>'+p.w+'kg</title></circle>';
+  });
+  html += '</svg>';
+  /* Tooltip (positioned by JS) */
+  html += '<div class="trend-tooltip" id="trend-tooltip"><div class="trend-tooltip-val" id="tt-val">0kg</div><div class="trend-tooltip-date" id="tt-date"></div></div>';
+  html += '</div>'; /* /trend-svg-wrap */
+
+  /* X labels */
+  html += '<div class="trend-x-labels">';
+  var labelStep = Math.max(1, Math.floor(n / 5));
+  var shownLabels = [];
+  for (var li=0; li<n; li+=labelStep) shownLabels.push(li);
+  if (shownLabels[shownLabels.length-1] !== n-1) shownLabels.push(n-1);
+  /* Render only first and last, plus evenly spread */
+  var xLabels = [0];
+  if (n > 2) {
+    var mid = Math.floor(n/2);
+    xLabels.push(mid);
+  }
+  xLabels.push(n-1);
+  xLabels = Array.from(new Set(xLabels));
+  html += xLabels.map(function(li) {
+    var d2 = new Date(entries[li].ts);
+    return '<span>'+_MONTHS_IT[d2.getMonth()]+' '+(d2.getFullYear()%100<10?'0':'')+d2.getFullYear()%100+'</span>';
+  }).join('');
+  html += '</div>';
+  html += '</div>'; /* /trend-chart-wrap */
+
+  /* Improvement badge */
+  var firstW = entries[0].weight;
+  var lastW = entries[entries.length-1].weight;
+  var diff = lastW - firstW;
+  if (diff !== 0) {
+    html += '<div style="text-align:center;margin-bottom:16px;">';
+    html += '<span style="display:inline-flex;align-items:center;gap:6px;background:'+(diff>0?'rgba(200,255,71,.1)':'rgba(239,68,68,.08)')+';border:1px solid '+(diff>0?'rgba(200,255,71,.3)':'rgba(239,68,68,.25)')+';border-radius:99px;padding:6px 16px;font-size:11px;font-weight:700;color:'+(diff>0?'var(--lime)':'#ef4444')+';">';
+    html += (diff>0?'↑':'↓')+' '+(diff>0?'+':'')+diff.toFixed(1)+'kg da inizio — '+(diff>0?'Ottimo miglioramento!':'In calo');
+    html += '</span></div>';
+  }
+
+  return html;
+}
+
+function _buildTrendView(h) {
+  var exMap = _getAllExercises(h);
+  var exNames = Object.keys(exMap).filter(function(n){ return exMap[n].entries.length >= 1; });
+
+  /* Group by session */
+  var bySid = { A:[], B:[], C:[], D:[] };
+  exNames.forEach(function(name) {
+    var sid = exMap[name].sid;
+    if (bySid[sid]) bySid[sid].push(name);
+  });
+
+  /* Auto-select first exercise if none selected or current not in data */
+  if (!_trendSelectedEx || !exMap[_trendSelectedEx]) {
+    _trendSelectedEx = exNames.length ? exNames[0] : null;
+  }
+
+  var html = '<div class="hist-view" id="hv-trend">';
+
+  if (!exNames.length) {
+    html += '<div class="analytics-empty"><span class="analytics-empty-icon">📈</span>Nessun dato disponibile.<br>Completa almeno una sessione con pesi!</div>';
+    html += '</div>';
+    return html;
+  }
+
+  /* Exercise picker */
+  html += '<div class="trend-ex-picker">';
+  html += '<span class="trend-picker-lbl">Seleziona esercizio</span>';
+  /* By session group */
+  var sidColors = { A:'var(--lime)', B:'var(--blue)', C:'var(--purple)', D:'#ffa547' };
+  var sidLabels = { A:'A — Chest & Biceps', B:'B — Legs', C:'C — Back & Triceps', D:'D — Shoulders & Abs' };
+  ['A','B','C','D'].forEach(function(sid) {
+    var names = bySid[sid];
+    if (!names.length) return;
+    html += '<div style="margin-bottom:8px;">';
+    html += '<div style="font-size:8px;font-weight:800;letter-spacing:1.5px;text-transform:uppercase;color:'+sidColors[sid]+';margin-bottom:5px;">'+sidLabels[sid]+'</div>';
+    html += '<div class="trend-ex-grid">';
+    names.forEach(function(name) {
+      var isSel = name === _trendSelectedEx;
+      html += '<button class="trend-ex-btn'+(isSel?' sel':'')+'" data-ex="'+esc(name)+'" type="button">'+esc(name)+'</button>';
+    });
+    html += '</div></div>';
+  });
+  html += '</div>'; /* /trend-ex-picker */
+
+  /* Chart */
+  html += '<div id="trend-chart-area">';
+  html += _buildTrendChart(exMap, _trendSelectedEx);
+  html += '</div>';
+
+  /* All-time PR list */
+  html += '<div style="font-size:10px;font-weight:700;letter-spacing:2px;text-transform:uppercase;color:var(--muted);margin-bottom:10px;">🏆 Record Personali</div>';
+  html += '<div class="trend-pr-list">';
+  var prIcons = ['🥇','🥈','🥉','🏅','🏅','🏅'];
+  var prItems = exNames.map(function(name) {
+    var mw = Math.max.apply(null, exMap[name].entries.map(function(e){ return e.weight; }));
+    return { name:name, weight:mw, sid:exMap[name].sid };
+  }).sort(function(a,b){ return b.weight-a.weight; }).slice(0,6);
+
+  prItems.forEach(function(item, i) {
+    html += '<div class="trend-pr-row">';
+    html += '<div class="trend-pr-icon">'+prIcons[i]+'</div>';
+    html += '<div class="trend-pr-info"><div class="trend-pr-name">'+esc(item.name)+'</div><div class="trend-pr-detail">Session '+item.sid+'</div></div>';
+    html += '<div class="trend-pr-weight">'+item.weight+'<span class="trend-pr-kg">kg</span></div>';
+    html += '</div>';
+  });
+  html += '</div>';
+
+  html += '</div>'; /* /hv-trend */
+  return html;
+}
+
+/* ── QUAL SECTION ── */
 function _buildQualSection(r, idx) {
   var qual = r.qual || {};
   var fields = [
@@ -2459,97 +2600,148 @@ function _buildQualSection(r, idx) {
   return html;
 }
 
+/* ── MAIN RENDER ── */
+var _histView = 'diary'; /* 'diary' | 'trend' */
+
+function renderHistory() {
+  var el = document.getElementById('history-content');
+  if (!el) return;
+  var h = loadHistory();
+
+  var html = '';
+
+  /* Segmented control */
+  html += '<div class="seg-control">';
+  html += '<button class="seg-btn'+(_histView==='diary'?' on':'')+'" id="seg-diary" type="button">📋 Diario</button>';
+  html += '<button class="seg-btn'+(_histView==='trend'?' on':'')+'" id="seg-trend" type="button">📈 Trend</button>';
+  html += '</div>';
+
+  /* Action row */
+  html += '<div class="hist-actions-row">';
+  html += '<button class="btn-hist-action" id="btn-export-hist" type="button">⬇ Esporta</button>';
+  html += '<label class="btn-hist-action" style="cursor:pointer">⬆ Importa<input type="file" id="btn-import-hist" accept=".json" style="display:none"></label>';
+  html += '<button class="btn-clear-history" id="btn-clear-hist" type="button">';
+  html += '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:12px;height:12px;margin-right:4px"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 01-2 2H8a2 2 0 01-2-2L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/><path d="M9 6V4a1 1 0 011-1h4a1 1 0 011 1v2"/></svg>Cancella</button>';
+  html += '</div>';
+
+  /* Views */
+  html += _buildDiaryView(h);
+  html += _buildTrendView(h);
+
+  el.innerHTML = html;
+  _bindHistControls();
+}
+
 function _bindHistControls() {
-  /* Sub-tabs */
-  document.querySelectorAll('.hist-stab').forEach(function(btn) {
-    btn.addEventListener('click', function() {
-      document.querySelectorAll('.hist-stab').forEach(function(b){ b.classList.remove('on'); });
-      document.querySelectorAll('.hist-subpanel').forEach(function(p){ p.classList.remove('on'); });
-      btn.classList.add('on');
-      var target = document.getElementById('stab-' + btn.getAttribute('data-stab'));
-      if (target) target.classList.add('on');
-    });
-  });
+  var h = loadHistory();
 
-  /* Exercise group accordion */
-  document.querySelectorAll('.ex-prog-group-header').forEach(function(hdr) {
-    hdr.addEventListener('click', function() {
-      var grp = hdr.closest('.ex-prog-group');
-      grp.classList.toggle('open');
-    });
-  });
-  /* Auto-open groups that have exercise cards */
-  document.querySelectorAll('.ex-prog-group').forEach(function(grp) {
-    var body = grp.querySelector('.ex-prog-group-body');
-    if (body && body.querySelector('.ex-prog-card')) grp.classList.add('open');
-  });
+  /* Segmented control */
+  var segDiary = document.getElementById('seg-diary');
+  var segTrend = document.getElementById('seg-trend');
+  function _switchView(view) {
+    _histView = view;
+    document.querySelectorAll('.seg-btn').forEach(function(b){ b.classList.remove('on'); });
+    document.querySelectorAll('.hist-view').forEach(function(v){ v.classList.remove('on'); });
+    var activeBtn = document.getElementById('seg-'+view);
+    var activeView = document.getElementById('hv-'+view);
+    if (activeBtn) activeBtn.classList.add('on');
+    if (activeView) activeView.classList.add('on');
+  }
+  if (segDiary) segDiary.addEventListener('click', function(){ _switchView('diary'); });
+  if (segTrend) segTrend.addEventListener('click', function(){ _switchView('trend'); });
 
-  /* Session expand/collapse */
-  document.querySelectorAll('.sess-entry-header').forEach(function(hdr) {
+  /* Week strip nav */
+  function _rebuildStrip() {
+    var wrap = document.getElementById('ws-wrap');
+    if (!wrap) return;
+    wrap.outerHTML = _buildWeekStrip(h, _wsOffset);
+    /* Re-bind after rebuild */
+    _bindWsNav();
+  }
+  function _bindWsNav() {
+    var prev = document.getElementById('ws-prev');
+    var next = document.getElementById('ws-next');
+    var todayBtn = document.getElementById('ws-today');
+    if (prev && !prev._b) { prev._b=1; prev.addEventListener('click', function(e){ e.stopPropagation(); _wsOffset--; var wrap=document.getElementById('ws-wrap'); if(wrap){wrap.outerHTML=_buildWeekStrip(h,_wsOffset);} _bindWsNav(); }); }
+    if (next && !next._b) { next._b=1; next.addEventListener('click', function(e){ e.stopPropagation(); if(_wsOffset<0){_wsOffset++;} var wrap=document.getElementById('ws-wrap'); if(wrap){wrap.outerHTML=_buildWeekStrip(h,_wsOffset);} _bindWsNav(); }); }
+    if (todayBtn && !todayBtn._b) { todayBtn._b=1; todayBtn.addEventListener('click', function(e){ e.stopPropagation(); _wsOffset=0; var wrap=document.getElementById('ws-wrap'); if(wrap){wrap.outerHTML=_buildWeekStrip(h,_wsOffset);} _bindWsNav(); }); }
+  }
+  _bindWsNav();
+
+  /* Diary cards expand/collapse */
+  document.querySelectorAll('.diary-card-header').forEach(function(hdr) {
     hdr.addEventListener('click', function() {
-      var entry = hdr.parentElement;
-      var detail = entry.querySelector('.sess-detail');
-      if (!detail) return;
-      var isOpen = detail.classList.contains('open');
+      var idx = hdr.getAttribute('data-dc');
+      var card = document.getElementById('dc-'+idx);
+      var body = document.getElementById('dcb-'+idx);
+      if (!card || !body) return;
+      var isOpen = card.classList.contains('open');
       /* close all */
-      document.querySelectorAll('.sess-detail.open').forEach(function(d){ d.classList.remove('open'); });
-      if (!isOpen) detail.classList.add('open');
+      document.querySelectorAll('.diary-card.open').forEach(function(c){ c.classList.remove('open'); });
+      if (!isOpen) card.classList.add('open');
     });
   });
+
+  /* Trend exercise picker */
+  document.querySelectorAll('.trend-ex-btn').forEach(function(btn) {
+    btn.addEventListener('click', function() {
+      _trendSelectedEx = btn.getAttribute('data-ex');
+      document.querySelectorAll('.trend-ex-btn').forEach(function(b){ b.classList.remove('sel'); });
+      btn.classList.add('sel');
+      var area = document.getElementById('trend-chart-area');
+      if (area) {
+        var exMap = _getAllExercises(h);
+        area.innerHTML = _buildTrendChart(exMap, _trendSelectedEx);
+        _bindTrendDots();
+      }
+    });
+  });
+  _bindTrendDots();
 
   /* Qual stars */
   document.querySelectorAll('.qual-stars').forEach(function(wrap) {
     wrap.querySelectorAll('.qual-star').forEach(function(star) {
       star.addEventListener('click', function() {
         var v = parseInt(star.getAttribute('data-v'), 10);
-        wrap.querySelectorAll('.qual-star').forEach(function(s, i) {
-          s.classList.toggle('filled', i < v);
-        });
+        wrap.querySelectorAll('.qual-star').forEach(function(s, i){ s.classList.toggle('filled', i < v); });
       });
     });
   });
-
   /* Qual save */
   document.querySelectorAll('[id^="qsave-"]').forEach(function(btn) {
     btn.addEventListener('click', function() {
       var idx = parseInt(btn.id.split('-')[1], 10);
-      var h = loadHistory();
-      if (!h[idx]) return;
+      var hl = loadHistory();
+      if (!hl[idx]) return;
       var qual = {};
       ['energy','sleep','stress','pump'].forEach(function(key) {
-        var filled = document.querySelectorAll('#qs-'+idx+'-'+key+' .qual-star.filled');
-        qual[key] = filled.length;
+        qual[key] = document.querySelectorAll('#qs-'+idx+'-'+key+' .qual-star.filled').length;
       });
       var noteEl = document.getElementById('qn-'+idx);
       qual.notes = noteEl ? noteEl.value.trim() : '';
-      h[idx].qual = qual;
-      try { localStorage.setItem(HIST_SK, JSON.stringify(h)); } catch(e){}
+      hl[idx].qual = qual;
+      try { localStorage.setItem(HIST_SK, JSON.stringify(hl)); } catch(e){}
       showToast('📋 Note salvate!');
     });
   });
 
-  /* Clear button */
+  /* Clear */
   _bindClearBtn();
 
-  /* Export button */
+  /* Export */
   var exportBtn = document.getElementById('btn-export-hist');
   if (exportBtn) {
     exportBtn.addEventListener('click', function() {
-      var h = loadHistory();
-      var json = JSON.stringify(h, null, 2);
-      var blob = new Blob([json], { type: 'application/json' });
+      var hl = loadHistory();
+      var blob = new Blob([JSON.stringify(hl, null, 2)], { type:'application/json' });
       var url = URL.createObjectURL(blob);
       var a = document.createElement('a');
       var now = new Date();
-      var ds = now.getFullYear()+'-'+String(now.getMonth()+1).padStart(2,'0')+'-'+String(now.getDate()).padStart(2,'0');
-      a.href = url; a.download = 'workout_history_'+ds+'.json';
-      a.click();
-      URL.revokeObjectURL(url);
+      a.href=url; a.download='workout_history_'+now.getFullYear()+'-'+String(now.getMonth()+1).padStart(2,'0')+'-'+String(now.getDate()).padStart(2,'0')+'.json';
+      a.click(); URL.revokeObjectURL(url);
       showToast('⬇ Storico esportato!');
     });
   }
-
-  /* Import button */
   var importInput = document.getElementById('btn-import-hist');
   if (importInput) {
     importInput.addEventListener('change', function(e) {
@@ -2559,20 +2751,52 @@ function _bindHistControls() {
       reader.onload = function(ev) {
         try {
           var parsed = JSON.parse(ev.target.result);
-          if (!Array.isArray(parsed)) throw new Error('Invalid format');
-          showConfirm('Importare '+parsed.length+' sessioni?<br><b>Attenzione:</b> lo storico esistente verrà sostituito.', function() {
-            try { localStorage.setItem(HIST_SK, JSON.stringify(parsed)); } catch(e2) {}
+          if (!Array.isArray(parsed)) throw new Error();
+          showConfirm('Importare '+parsed.length+' sessioni?<br><b>Lo storico esistente verrà sostituito.</b>', function() {
+            try { localStorage.setItem(HIST_SK, JSON.stringify(parsed)); } catch(e2){}
             renderHistory();
             showToast('⬆ Storico importato!');
           });
-        } catch(err) {
-          showToast('⚠ File non valido');
-        }
+        } catch(err) { showToast('⚠ File non valido'); }
         importInput.value = '';
       };
       reader.readAsText(file);
     });
   }
+}
+
+function _bindTrendDots() {
+  var tooltip = document.getElementById('trend-tooltip');
+  var ttVal = document.getElementById('tt-val');
+  var ttDate = document.getElementById('tt-date');
+  var wrap = document.getElementById('trend-svg-wrap');
+  if (!tooltip || !wrap) return;
+  document.querySelectorAll('.trend-dot').forEach(function(dot) {
+    dot.addEventListener('mouseenter', function(e) {
+      var w = dot.getAttribute('data-w');
+      var ts = parseInt(dot.getAttribute('data-ts'), 10);
+      var d = new Date(ts);
+      if (ttVal) ttVal.textContent = w + 'kg';
+      if (ttDate) ttDate.textContent = d.toLocaleDateString('it-IT', {day:'2-digit',month:'short',year:'numeric'});
+      tooltip.classList.add('show');
+      var rect = wrap.getBoundingClientRect();
+      var dotRect = dot.getBoundingClientRect();
+      var left = dotRect.left - rect.left - 60;
+      var top = dotRect.top - rect.top - 70;
+      if (left < 0) left = 0;
+      tooltip.style.left = left + 'px';
+      tooltip.style.top = top + 'px';
+    });
+    dot.addEventListener('mouseleave', function() { tooltip.classList.remove('show'); });
+    dot.addEventListener('click', function() {
+      var w = dot.getAttribute('data-w');
+      var ts = parseInt(dot.getAttribute('data-ts'), 10);
+      var d = new Date(ts);
+      if (ttVal) ttVal.textContent = w + 'kg';
+      if (ttDate) ttDate.textContent = d.toLocaleDateString('it-IT', {day:'2-digit',month:'short',year:'numeric'});
+      tooltip.classList.toggle('show');
+    });
+  });
 }
 
 function _bindClearBtn() {
@@ -2585,7 +2809,7 @@ function _bindClearBtn() {
       return;
     }
     showConfirm('Cancellare tutto lo storico?<br>I dati non potranno essere recuperati.', function() {
-      try { localStorage.removeItem(HIST_SK); } catch(e) {}
+      try { localStorage.removeItem(HIST_SK); } catch(e){}
       renderHistory();
     });
   });
@@ -3794,115 +4018,16 @@ document.getElementById('ibc').addEventListener('click', function() {
 
 buildAll();
 
-/* ── DEMO SEEDER: inietta dati esempio se history è vuota ── */
+/* ── RESET DATI DEMO (una volta sola al primo avvio di questa versione) ──
+   Cancella tutto ciò che era salvato con i dati finti delle versioni precedenti.
+   Il flag wk_v29_fresh garantisce che questa pulizia avvenga una sola volta.
+   Da questo momento lo storico conterrà SOLO allenamenti reali dell'utente.    */
 (function() {
   try {
-    var h = loadHistory();
-    if (h.length > 0) return; /* già ha dati */
-    var demoData = [];
-    var now = Date.now();
-    var day = 86400000;
-    var sessions = [
-      { sid:'A', exercises:[
-        {name:'Machine Chest Press',          muscle:'Chest · Pectoralis Major',        weight:60, sets:4, reps:'8-12'},
-        {name:'Smith Machine Incline Press',  muscle:'Upper Chest · Anterior Deltoid',  weight:50, sets:4, reps:'8-12'},
-        {name:'Cable Crossover',              muscle:'Chest · Pectoralis Minor',         weight:15, sets:3, reps:'12-15'},
-        {name:'Preacher Curl Machine',        muscle:'Biceps · Brachialis',             weight:35, sets:3, reps:'10-12'},
-        {name:'Hammer Curl',                  muscle:'Biceps · Brachioradialis',         weight:16, sets:3, reps:'10-12'},
-        {name:'Chest Dips',                   muscle:'Chest · Triceps Brachii',          weight:null, sets:3, reps:'8-12'}
-      ]},
-      { sid:'B', exercises:[
-        {name:'Leg Press',                    muscle:'Quadriceps · Gluteus Maximus',     weight:180, sets:4, reps:'10-12'},
-        {name:'Hack Squat',                   muscle:'Quadriceps · Vastus Lateralis',    weight:100, sets:3, reps:'8-10'},
-        {name:'Romanian Deadlift',            muscle:'Hamstrings · Gluteus Maximus',     weight:70, sets:3, reps:'10-12'},
-        {name:'Leg Curl Machine',             muscle:'Hamstrings · Biceps Femoris',      weight:50, sets:3, reps:'12-15'},
-        {name:'Calf Raise',                   muscle:'Calves · Gastrocnemius',           weight:null, sets:4, reps:'15-20'}
-      ]},
-      { sid:'C', exercises:[
-        {name:'Lat Pulldown',                 muscle:'Back · Latissimus Dorsi',          weight:75, sets:4, reps:'8-12'},
-        {name:'Seated Cable Row',             muscle:'Back · Rhomboids',                 weight:65, sets:3, reps:'10-12'},
-        {name:'Face Pull',                    muscle:'Shoulders · Posterior Deltoid',    weight:22, sets:3, reps:'15-20'},
-        {name:'Triceps Pushdown',             muscle:'Triceps · Lateral Head',           weight:28, sets:3, reps:'12-15'},
-        {name:'French Press',                 muscle:'Triceps · Long Head',              weight:30, sets:3, reps:'10-12'},
-        {name:'Bodyweight Dip',               muscle:'Triceps · Brachii',                weight:null, sets:3, reps:'10-15'}
-      ]},
-      { sid:'D', exercises:[
-        {name:'Overhead Press',               muscle:'Shoulders · Anterior Deltoid',     weight:50, sets:4, reps:'6-8'},
-        {name:'Lateral Raise',                muscle:'Shoulders · Lateral Deltoid',      weight:12, sets:3, reps:'12-15'},
-        {name:'Front Raise',                  muscle:'Shoulders · Anterior Deltoid',     weight:10, sets:3, reps:'10-12'},
-        {name:'Shrug',                        muscle:'Shoulders · Trapezius',            weight:30, sets:3, reps:'12-15'},
-        {name:'Reverse Crunch',               muscle:'Lower Abs · Iliopsoas',            weight:null, sets:3, reps:'12-15'},
-        {name:'Plank',                        muscle:'Core · Transverse Abdominis',      weight:null, sets:3, reps:'30-60s'}
-      ]}
-    ];
-
-    /* Training days: simulate ~19 sessions over 60 days, with clear progression */
-    var days = [60,57,54,50,47,43,40,36,33,30,27,23,20,17,13,10,7,4,2];
-    var weights = {};
-
-    days.forEach(function(dAgo, idx) {
-      var sIdx = idx % 4;
-      var ses = sessions[sIdx];
-      var ts = now - dAgo * day;
-      var d = new Date(ts);
-      var dd = String(d.getDate()).padStart(2,'0'), MM = String(d.getMonth()+1).padStart(2,'0');
-      var hh = String(d.getHours()).padStart(2,'0'), mm2 = String(d.getMinutes()).padStart(2,'0');
-
-      var exes = ses.exercises.map(function(ex, ei) {
-        var k = ses.sid + ei;
-        /* initialise or progress weight */
-        if (!weights[k]) weights[k] = ex.weight;
-        else if (ex.weight) {
-          /* consistent progression every ~3 sessions of same type */
-          var progressions = Math.floor(idx / 4);
-          /* add 2.5kg every 3 progressions */
-          if (idx % 4 === 0 && idx > 0 && progressions % 2 === 0) {
-            weights[k] = Math.round((weights[k] + 2.5) * 2) / 2;
-          }
-        }
-        var w = weights[k] || null;
-
-        /* Build setsLog with realistic variation */
-        var baseReps = parseInt(ex.reps, 10) || 10;
-        var setsLogArr = [];
-        for (var si = 0; si < ex.sets; si++) {
-          /* Fatigue: last 1-2 sets may lose 1-2 reps */
-          var fatigue = si >= ex.sets - 1 && Math.random() > 0.45 ? (Math.random() > 0.5 ? 2 : 1) : 0;
-          var repV = Math.max(1, baseReps - fatigue);
-          /* Occasional weight drop on last set */
-          var wV = w ? (si === ex.sets - 1 && Math.random() > 0.7 ? Math.max(0, w - 5) : w) : null;
-          setsLogArr.push({ setIndex: si+1, reps: repV, weight: wV, ts: null });
-        }
-
-        /* Inject a real PR on specific sessions: session 12 and 16 */
-        if ((idx === 12 || idx === 16) && w && ei === 0) {
-          var pr_extra = idx === 16 ? 5 : 2.5;
-          setsLogArr[0].weight = w + pr_extra;
-        }
-
-        return { name:ex.name, muscle:ex.muscle, weight: w, sets:ex.sets, reps:ex.reps, setsLog: setsLogArr };
-      });
-
-      /* Variable session duration: 38-58 min */
-      var dur = (38 + Math.round(Math.random() * 20)) * 60;
-      var m = Math.floor(dur/60), s = dur % 60;
-      /* Score grows with fitness progress */
-      var baseScore = 52 + idx * 2.2;
-      var scoreNoise = (Math.random() * 12) - 4;
-      demoData.push({
-        date: dd+'/'+MM+'/'+d.getFullYear()+' '+hh+':'+mm2,
-        session: ses.sid,
-        duration: m + ' min ' + s + ' s',
-        durationSecs: dur,
-        exercises: exes,
-        score: Math.min(100, Math.round(baseScore + scoreNoise)),
-        ts: ts
-      });
-    });
-
-    /* Save newest first */
-    demoData.reverse();
-    localStorage.setItem(HIST_SK, JSON.stringify(demoData));
+    var FLAG = 'wk_v29_fresh';
+    if (localStorage.getItem(FLAG)) return;
+    localStorage.removeItem(HIST_SK);
+    localStorage.setItem(FLAG, '1');
   } catch(e) {}
 })();
 
