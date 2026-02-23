@@ -915,6 +915,10 @@ footer a { color:var(--blue); text-decoration:none; }
   border-bottom:1px solid rgba(255,255,255,.06);
   margin-bottom:8px;
 }
+.trend-chart-section-lbl {
+  font-size:10px; font-weight:800; letter-spacing:2px; text-transform:uppercase;
+  margin-bottom:6px; margin-top:4px; display:block;
+}
 .trend-svg {
   width:100%; overflow:visible;
   display:block;
@@ -2367,14 +2371,22 @@ function _buildDiaryView(h) {
 var _trendSelectedEx = null;
 
 function _getAllExercises(h) {
-  var map = {}; /* name → {muscle, sid, entries:[{ts,weight}]} */
+  var map = {}; /* name → {muscle, sid, entries:[{ts,weight,avgReps}]} */
   h.forEach(function(r) {
     var sid = (r.session||'A').toUpperCase();
     (r.exercises||[]).forEach(function(ex) {
       if (!map[ex.name]) map[ex.name] = { muscle: ex.muscle, sid: sid, entries: [] };
       var w = ex.weight || 0;
-      (ex.setsLog||[]).forEach(function(s){ if(s.weight&&s.weight>w) w=s.weight; });
-      if (w > 0) map[ex.name].entries.push({ ts: _parseDateTs(r), weight: w });
+      var totalReps = 0, repsCount = 0;
+      (ex.setsLog||[]).forEach(function(s){
+        if (s.weight && s.weight > w) w = s.weight;
+        if (s.reps) { totalReps += s.reps; repsCount++; }
+      });
+      var avgReps = repsCount > 0 ? Math.round(totalReps / repsCount) : 0;
+      /* push entry if we have at least weight or reps data */
+      if (w > 0 || avgReps > 0) {
+        map[ex.name].entries.push({ ts: _parseDateTs(r), weight: w, avgReps: avgReps });
+      }
     });
   });
   /* Sort entries by ts asc */
@@ -2384,171 +2396,220 @@ function _getAllExercises(h) {
   return map;
 }
 
+/* ── helper: build one SVG line chart ── */
+function _buildOneSVG(entries, valueKey, color, colorDim, unit, tooltipId, gradSuffix) {
+  var vals = entries.map(function(e){ return e[valueKey] || 0; });
+  var maxV = Math.max.apply(null, vals);
+  var minV = Math.min.apply(null, vals);
+
+  var svgW = 340, svgH = 130;
+  var padL = 34, padR = 14, padT = 12, padB = 24;
+  var chartW = svgW - padL - padR;
+  var chartH = svgH - padT - padB;
+  var n = entries.length;
+  var vRange = maxV - minV || 1;
+
+  var ySteps = 3;
+  var rawStep = vRange / ySteps;
+  var magnitude = Math.pow(10, Math.floor(Math.log(rawStep) / Math.LN10));
+  var niceStep = Math.ceil(rawStep / magnitude) * magnitude;
+  if (niceStep < 1) niceStep = 1;
+  var yMin = Math.floor(minV / niceStep) * niceStep;
+  var yMax = yMin + niceStep * (ySteps + 1);
+
+  function toX(i) { return padL + (n === 1 ? chartW/2 : i / (n-1) * chartW); }
+  function toY(v) { return padT + chartH - ((v - yMin) / (yMax - yMin)) * chartH; }
+
+  var pts = entries.map(function(e, i) {
+    return { x: toX(i), y: toY(e[valueKey]||0), v: e[valueKey]||0, ts: e.ts };
+  });
+  var polyline = pts.map(function(p){ return p.x.toFixed(1)+','+p.y.toFixed(1); }).join(' ');
+  var areaPath = 'M'+pts[0].x.toFixed(1)+','+(padT+chartH).toFixed(1)+' '
+    + pts.map(function(p){ return 'L'+p.x.toFixed(1)+','+p.y.toFixed(1); }).join(' ')
+    + ' L'+pts[pts.length-1].x.toFixed(1)+','+(padT+chartH).toFixed(1)+' Z';
+  var gradId = 'tg_'+gradSuffix+'_'+Math.round(Math.random()*99999);
+
+  var html = '';
+  html += '<svg class="trend-svg" viewBox="0 0 '+svgW+' '+svgH+'" preserveAspectRatio="xMidYMid meet">';
+  html += '<defs><linearGradient id="'+gradId+'" x1="0" y1="0" x2="0" y2="1">';
+  html += '<stop offset="0%" stop-color="'+colorDim+'"/>';
+  html += '<stop offset="100%" stop-color="rgba(0,0,0,0)"/>';
+  html += '</linearGradient></defs>';
+
+  /* Y gridlines */
+  for (var yi = 0; yi <= ySteps+1; yi++) {
+    var yv = yMin + yi * niceStep;
+    var yy = toY(yv);
+    if (yy < padT - 2 || yy > padT + chartH + 2) continue;
+    html += '<line class="trend-grid-line" x1="'+padL+'" y1="'+yy.toFixed(1)+'" x2="'+(svgW-padR)+'" y2="'+yy.toFixed(1)+'"/>';
+    html += '<text class="trend-grid-lbl" x="'+(padL-4)+'" y="'+(yy+3).toFixed(1)+'" text-anchor="end">'+yv+'</text>';
+  }
+
+  /* Area + line */
+  html += '<path d="'+areaPath+'" fill="url(#'+gradId+')" opacity=".9"/>';
+  html += '<polyline points="'+polyline+'" fill="none" stroke="'+color+'" stroke-width="2.2" stroke-linejoin="round" stroke-linecap="round"/>';
+
+  /* Dots */
+  pts.forEach(function(p) {
+    var isPeak = p.v === maxV;
+    var r = isPeak ? 5 : 3.5;
+    var fill = isPeak ? color : 'var(--bg)';
+    html += '<circle cx="'+p.x.toFixed(1)+'" cy="'+p.y.toFixed(1)+'" r="'+r
+          + '" fill="'+fill+'" stroke="'+color+'" stroke-width="2"'
+          + ' data-v="'+p.v+'" data-ts="'+p.ts+'" data-unit="'+unit+'" data-ttid="'+tooltipId+'">'
+          + '<title>'+p.v+unit+'</title></circle>';
+  });
+
+  html += '</svg>';
+  return html;
+}
+
+function _buildXLabels(entries) {
+  var n = entries.length;
+  var xLabels = [0];
+  if (n > 2) xLabels.push(Math.floor(n/2));
+  xLabels.push(n-1);
+  xLabels = xLabels.filter(function(v,i,a){ return a.indexOf(v)===i; });
+  return '<div class="trend-x-labels">'
+    + xLabels.map(function(li){
+        var d2 = new Date(entries[li].ts);
+        return '<span>'+_MONTHS_IT[d2.getMonth()]+' '+(d2.getFullYear()%100<10?'0':'')+d2.getFullYear()%100+'</span>';
+      }).join('')
+    + '</div>';
+}
+
 function _buildTrendChart(exMap, exName) {
   if (!exName || !exMap[exName]) {
     return '<div class="trend-empty"><span class="trend-empty-icon">📈</span>Seleziona un esercizio<br>per vedere la progressione</div>';
   }
   var info = exMap[exName];
-  var entries = info.entries.filter(function(e){ return e.weight > 0; });
-  if (entries.length < 2) {
-    return '<div class="trend-empty"><span class="trend-empty-icon">📉</span>Servono almeno 2 sessioni<br>con peso registrato</div>';
+  var allEntries = info.entries;
+
+  var wEntries = allEntries.filter(function(e){ return e.weight > 0; });
+  var rEntries = allEntries.filter(function(e){ return e.avgReps > 0; });
+
+  if (wEntries.length < 2 && rEntries.length < 2) {
+    return '<div class="trend-empty"><span class="trend-empty-icon">📉</span>Servono almeno 2 sessioni<br>con dati registrati</div>';
   }
 
-  var weights = entries.map(function(e){ return e.weight; });
-  var maxW = Math.max.apply(null, weights);
-  var minW = Math.min.apply(null, weights);
-  var prDate = new Date(entries[entries.length-1].ts);
-
-  /* SVG chart */
-  var svgW = 340, svgH = 160;
-  var padL = 38, padR = 16, padT = 14, padB = 28;
-  var chartW = svgW - padL - padR;
-  var chartH = svgH - padT - padB;
-  var n = entries.length;
-  var wRange = maxW - minW || 1;
-
-  /* Y gridlines */
-  var ySteps = 4;
-  var yStep = Math.ceil(wRange / ySteps / 5) * 5;
-  if (yStep < 1) yStep = 1;
-  var yMin = Math.floor(minW / yStep) * yStep;
-  var yMax = yMin + yStep * (ySteps + 1);
-
-  function toX(i) { return padL + (n === 1 ? chartW/2 : i / (n-1) * chartW); }
-  function toY(w) { return padT + chartH - ((w - yMin) / (yMax - yMin)) * chartH; }
-
-  var pts = entries.map(function(e, i) { return { x: toX(i), y: toY(e.weight), w: e.weight, ts: e.ts }; });
-  var polyline = pts.map(function(p){ return p.x.toFixed(1)+','+p.y.toFixed(1); }).join(' ');
-  var areaPath = 'M'+pts[0].x.toFixed(1)+','+(padT+chartH).toFixed(1) + ' ' +
-    pts.map(function(p){ return 'L'+p.x.toFixed(1)+','+p.y.toFixed(1); }).join(' ') +
-    ' L'+pts[pts.length-1].x.toFixed(1)+','+(padT+chartH).toFixed(1)+' Z';
-  var gradId = 'trendGrad_'+Math.round(Math.random()*999999);
+  var maxW = wEntries.length ? Math.max.apply(null, wEntries.map(function(e){ return e.weight; })) : 0;
+  var maxR = rEntries.length ? Math.max.apply(null, rEntries.map(function(e){ return e.avgReps; })) : 0;
 
   var html = '<div class="trend-chart-wrap">';
+
+  /* ── Header ── */
   html += '<div class="trend-chart-header">';
   html += '<div><div class="trend-chart-name">'+esc(exName)+'</div>';
   html += '<div class="trend-chart-sub">'+esc(info.muscle||'')+'</div></div>';
-  html += '<div class="trend-chart-pr"><div class="trend-chart-pr-val">'+maxW+'kg</div><div class="trend-chart-pr-lbl">Record personale</div></div>';
-  html += '</div>';
+  html += '<div style="display:flex;gap:10px;">';
+  if (maxW > 0) html += '<div class="trend-chart-pr"><div class="trend-chart-pr-val">'+maxW+'kg</div><div class="trend-chart-pr-lbl">Max peso</div></div>';
+  if (maxR > 0) html += '<div class="trend-chart-pr" style="border-color:rgba(71,184,255,.25);background:rgba(71,184,255,.07);"><div class="trend-chart-pr-val" style="color:var(--blue)">'+maxR+'rep</div><div class="trend-chart-pr-lbl">Max reps</div></div>';
+  html += '</div></div>';
 
-  html += '<div class="trend-svg-wrap" id="trend-svg-wrap">';
-  html += '<svg class="trend-svg" viewBox="0 0 '+svgW+' '+svgH+'" preserveAspectRatio="xMidYMid meet">';
-  /* Gradient */
-  html += '<defs><linearGradient id="'+gradId+'" x1="0" y1="0" x2="0" y2="1">';
-  html += '<stop offset="0%" stop-color="rgba(200,255,71,.22)"/>';
-  html += '<stop offset="100%" stop-color="rgba(200,255,71,0)"/>';
-  html += '</linearGradient></defs>';
-
-  /* Y grid lines */
-  for (var yi = 0; yi <= ySteps+1; yi++) {
-    var yw = yMin + yi * yStep;
-    var yy = toY(yw);
-    if (yy < padT - 2 || yy > padT + chartH + 2) continue;
-    html += '<line class="trend-grid-line" x1="'+padL+'" y1="'+yy.toFixed(1)+'" x2="'+(svgW-padR)+'" y2="'+yy.toFixed(1)+'"/>';
-    html += '<text class="trend-grid-lbl" x="'+(padL-4).toFixed(1)+'" y="'+(yy+3).toFixed(1)+'" text-anchor="end">'+yw+'</text>';
+  /* ── KG chart ── */
+  if (wEntries.length >= 2) {
+    html += '<div class="trend-chart-section-lbl" style="color:var(--lime)">⬆ Peso sollevato (kg)</div>';
+    html += '<div class="trend-svg-wrap" id="trend-svg-wrap">';
+    html += _buildOneSVG(wEntries, 'weight', 'var(--lime)', 'rgba(200,255,71,.2)', 'kg', 'trend-tooltip', 'w');
+    html += '<div class="trend-tooltip" id="trend-tooltip"><div class="trend-tooltip-val" id="tt-val">0kg</div><div class="trend-tooltip-date" id="tt-date"></div></div>';
+    html += '</div>';
+    html += _buildXLabels(wEntries);
+  } else {
+    html += '<div class="trend-empty" style="padding:14px 0;font-size:11px;">Aggiungi il peso ai prossimi allenamenti per vedere il grafico kg</div>';
   }
 
-  /* Area */
-  html += '<path class="trend-area" d="'+areaPath+'" fill="url(#'+gradId+')"/>';
-  /* Line */
-  html += '<polyline class="trend-line" points="'+polyline+'"/>';
-  /* Dots */
-  pts.forEach(function(p, i) {
-    var isPR = p.w === maxW;
-    var r = isPR ? 5 : 3.5;
-    var fill = isPR ? 'var(--lime)' : 'var(--bg)';
-    var stroke = isPR ? 'var(--lime)' : 'var(--lime)';
-    html += '<circle class="trend-dot" cx="'+p.x.toFixed(1)+'" cy="'+p.y.toFixed(1)+'" r="'+r+'" fill="'+fill+'" stroke="'+stroke+'" stroke-width="2" data-idx="'+i+'" data-w="'+p.w+'" data-ts="'+p.ts+'"><title>'+p.w+'kg</title></circle>';
-  });
-  html += '</svg>';
-  /* Tooltip (positioned by JS) */
-  html += '<div class="trend-tooltip" id="trend-tooltip"><div class="trend-tooltip-val" id="tt-val">0kg</div><div class="trend-tooltip-date" id="tt-date"></div></div>';
-  html += '</div>'; /* /trend-svg-wrap */
-
-  /* X labels */
-  html += '<div class="trend-x-labels">';
-  var labelStep = Math.max(1, Math.floor(n / 5));
-  var shownLabels = [];
-  for (var li=0; li<n; li+=labelStep) shownLabels.push(li);
-  if (shownLabels[shownLabels.length-1] !== n-1) shownLabels.push(n-1);
-  /* Render only first and last, plus evenly spread */
-  var xLabels = [0];
-  if (n > 2) {
-    var mid = Math.floor(n/2);
-    xLabels.push(mid);
+  /* ── Reps chart ── */
+  if (rEntries.length >= 2) {
+    html += '<div class="trend-chart-section-lbl" style="color:var(--blue);margin-top:18px;">📊 Reps medie per set</div>';
+    html += '<div class="trend-svg-wrap" id="trend-svg-wrap-r">';
+    html += _buildOneSVG(rEntries, 'avgReps', 'var(--blue)', 'rgba(71,184,255,.18)', 'rep', 'trend-tooltip-r', 'r');
+    html += '<div class="trend-tooltip" id="trend-tooltip-r"><div class="trend-tooltip-val" id="tt-val-r">0rep</div><div class="trend-tooltip-date" id="tt-date-r"></div></div>';
+    html += '</div>';
+    html += _buildXLabels(rEntries);
+  } else {
+    html += '<div class="trend-empty" style="padding:14px 0;font-size:11px;margin-top:10px;">Completa altri allenamenti per vedere il grafico reps</div>';
   }
-  xLabels.push(n-1);
-  xLabels = Array.from(new Set(xLabels));
-  html += xLabels.map(function(li) {
-    var d2 = new Date(entries[li].ts);
-    return '<span>'+_MONTHS_IT[d2.getMonth()]+' '+(d2.getFullYear()%100<10?'0':'')+d2.getFullYear()%100+'</span>';
-  }).join('');
-  html += '</div>';
+
   html += '</div>'; /* /trend-chart-wrap */
 
+  /* ── Progress summary row (kg based) ── */
+  if (wEntries.length >= 2) {
+    var firstW   = wEntries[0].weight;
+    var lastW    = wEntries[wEntries.length-1].weight;
+    var diff     = Math.round((lastW - firstW) * 10) / 10;
+    var pct      = firstW > 0 ? Math.round((diff / firstW) * 1000) / 10 : 0;
+    var spanMs   = wEntries[wEntries.length-1].ts - wEntries[0].ts;
+    var spanDays = Math.max(1, Math.round(spanMs / 86400000));
+    var spanStr  = spanDays < 7   ? spanDays + ' giorni'
+                 : spanDays < 30  ? Math.round(spanDays / 7) + ' sett.'
+                 : spanDays < 365 ? Math.round(spanDays / 30) + ' mesi'
+                 : (Math.round(spanDays / 365 * 10) / 10) + ' anni';
+    var isPos  = diff > 0;
+    var isFlat = diff === 0;
+    var cMain  = isFlat ? 'var(--muted)' : isPos ? '#c8ff47' : '#ef4444';
+    var bgMain = isFlat ? 'rgba(255,255,255,.04)' : isPos ? 'rgba(200,255,71,.08)' : 'rgba(239,68,68,.08)';
+    var bdMain = isFlat ? 'rgba(255,255,255,.10)' : isPos ? 'rgba(200,255,71,.28)' : 'rgba(239,68,68,.28)';
+    var arrow  = isFlat ? '\u2192' : isPos ? '\u2191' : '\u2193';
+    var sign   = diff > 0 ? '+' : '';
 
-  /* ── Progress summary row ── */
-  var firstW   = entries[0].weight;
-  var lastW    = entries[entries.length-1].weight;
-  var diff     = Math.round((lastW - firstW) * 10) / 10;
-  var pct      = firstW > 0 ? Math.round((diff / firstW) * 1000) / 10 : 0;
-  var spanMs   = entries[entries.length-1].ts - entries[0].ts;
-  var spanDays = Math.max(1, Math.round(spanMs / 86400000));
-  var spanStr  = spanDays < 7   ? spanDays + ' giorni'
-               : spanDays < 30  ? Math.round(spanDays / 7) + ' sett.'
-               : spanDays < 365 ? Math.round(spanDays / 30) + ' mesi'
-               : (Math.round(spanDays / 365 * 10) / 10) + ' anni';
-  var isPos  = diff > 0;
-  var isFlat = diff === 0;
-  var cMain  = isFlat ? 'var(--muted)' : isPos ? '#c8ff47' : '#ef4444';
-  var bgMain = isFlat ? 'rgba(255,255,255,.04)' : isPos ? 'rgba(200,255,71,.08)' : 'rgba(239,68,68,.08)';
-  var bdMain = isFlat ? 'rgba(255,255,255,.10)' : isPos ? 'rgba(200,255,71,.28)' : 'rgba(239,68,68,.28)';
-  var arrow  = isFlat ? '\u2192' : isPos ? '\u2191' : '\u2193';
-  var sign   = diff > 0 ? '+' : '';
-  var msgTxt = isFlat ? 'Peso invariato' : isPos ? 'Progressi confermati \ud83d\udcaa' : 'In calo — spingiti oltre \ud83d\udd25';
-
-  html += '<div style="display:grid;grid-template-columns:1fr 1px 1fr 1px 1fr;align-items:center;'
-        + 'background:'+bgMain+';border:1px solid '+bdMain+';border-radius:14px;'
-        + 'padding:14px 10px 10px;margin-bottom:16px;gap:0;">';
-
-  /* col 1 — kg diff */
-  html += '<div style="text-align:center;">'
-        + '<div style="font-family:\'Barlow Condensed\',sans-serif;font-size:26px;font-weight:900;line-height:1;color:'+cMain+'">'
-        +   arrow+' '+sign+diff+'kg'
+    /* reps trend */
+    var repsTrend = '';
+    if (rEntries.length >= 2) {
+      var rDiff = rEntries[rEntries.length-1].avgReps - rEntries[0].avgReps;
+      var rSign = rDiff > 0 ? '+' : '';
+      var rArrow = rDiff > 0 ? '\u2191' : rDiff < 0 ? '\u2193' : '\u2192';
+      var rCol = rDiff > 0 ? 'var(--blue)' : rDiff < 0 ? '#ef4444' : 'var(--muted)';
+      repsTrend = '<div style="text-align:center;">'
+        + '<div style="font-family:\'Barlow Condensed\',sans-serif;font-size:26px;font-weight:900;line-height:1;color:'+rCol+'">'
+        + rArrow+' '+rSign+rDiff+' rep'
         + '</div>'
-        + '<div style="font-size:9px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:rgba(255,255,255,.3);margin-top:4px;">variazione</div>'
+        + '<div style="font-size:9px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:rgba(255,255,255,.3);margin-top:4px;">Δ reps medie</div>'
         + '</div>';
+    }
 
-  /* divider */
-  html += '<div style="width:1px;height:36px;background:rgba(255,255,255,.08);"></div>';
+    var msgTxt = isFlat ? 'Peso invariato' : isPos ? 'Progressi confermati 💪' : 'In calo — spingiti oltre 🔥';
 
-  /* col 2 — percentage */
-  html += '<div style="text-align:center;">'
-        + '<div style="font-family:\'Barlow Condensed\',sans-serif;font-size:26px;font-weight:900;line-height:1;color:'+cMain+'">'
-        +   (isFlat ? '—' : sign+pct+'%')
-        + '</div>'
-        + '<div style="font-size:9px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:rgba(255,255,255,.3);margin-top:4px;">crescita</div>'
-        + '</div>';
+    html += '<div style="display:grid;grid-template-columns:1fr 1px 1fr 1px 1fr'+(repsTrend?' 1px 1fr':'')+';align-items:center;'
+          + 'background:'+bgMain+';border:1px solid '+bdMain+';border-radius:14px;'
+          + 'padding:14px 10px 10px;margin-bottom:16px;gap:0;">';
 
-  /* divider */
-  html += '<div style="width:1px;height:36px;background:rgba(255,255,255,.08);"></div>';
+    html += '<div style="text-align:center;">'
+          + '<div style="font-family:\'Barlow Condensed\',sans-serif;font-size:26px;font-weight:900;line-height:1;color:'+cMain+'">'
+          + arrow+' '+sign+diff+'kg'
+          + '</div>'
+          + '<div style="font-size:9px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:rgba(255,255,255,.3);margin-top:4px;">Δ peso</div>'
+          + '</div>';
 
-  /* col 3 — time span */
-  html += '<div style="text-align:center;">'
-        + '<div style="font-family:\'Barlow Condensed\',sans-serif;font-size:26px;font-weight:900;line-height:1;color:var(--text-sub)">'
-        +   spanStr
-        + '</div>'
-        + '<div style="font-size:9px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:rgba(255,255,255,.3);margin-top:4px;">periodo</div>'
-        + '</div>';
+    html += '<div style="width:1px;height:36px;background:rgba(255,255,255,.08);"></div>';
 
-  /* full-width message below */
-  html += '<div style="grid-column:1/-1;text-align:center;font-size:11px;font-weight:700;color:'+cMain
-        + ';border-top:1px solid rgba(255,255,255,.06);margin-top:10px;padding-top:8px;letter-spacing:.3px;">'
-        +   msgTxt
-        + '</div>';
+    html += '<div style="text-align:center;">'
+          + '<div style="font-family:\'Barlow Condensed\',sans-serif;font-size:26px;font-weight:900;line-height:1;color:'+cMain+'">'
+          + (isFlat ? '—' : sign+pct+'%')
+          + '</div>'
+          + '<div style="font-size:9px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:rgba(255,255,255,.3);margin-top:4px;">crescita</div>'
+          + '</div>';
 
-  html += '</div>';
+    html += '<div style="width:1px;height:36px;background:rgba(255,255,255,.08);"></div>';
 
+    html += '<div style="text-align:center;">'
+          + '<div style="font-family:\'Barlow Condensed\',sans-serif;font-size:26px;font-weight:900;line-height:1;color:var(--text-sub)">'
+          + spanStr
+          + '</div>'
+          + '<div style="font-size:9px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:rgba(255,255,255,.3);margin-top:4px;">periodo</div>'
+          + '</div>';
+
+    if (repsTrend) {
+      html += '<div style="width:1px;height:36px;background:rgba(255,255,255,.08);"></div>';
+      html += repsTrend;
+    }
+
+    html += '<div style="grid-column:1/-1;text-align:center;font-size:11px;font-weight:700;color:'+cMain
+          + ';border-top:1px solid rgba(255,255,255,.06);margin-top:10px;padding-top:8px;letter-spacing:.3px;">'
+          + msgTxt
+          + '</div>';
+
+    html += '</div>';
+  }
 
   return html;
 }
@@ -2819,35 +2880,41 @@ function _bindHistControls() {
 }
 
 function _bindTrendDots() {
-  var tooltip = document.getElementById('trend-tooltip');
-  var ttVal = document.getElementById('tt-val');
-  var ttDate = document.getElementById('tt-date');
-  var wrap = document.getElementById('trend-svg-wrap');
-  if (!tooltip || !wrap) return;
-  document.querySelectorAll('.trend-dot').forEach(function(dot) {
-    dot.addEventListener('mouseenter', function(e) {
-      var w = dot.getAttribute('data-w');
+  /* bind dots for both kg chart and reps chart */
+  document.querySelectorAll('#trend-svg-wrap circle[data-v], #trend-svg-wrap-r circle[data-v]').forEach(function(dot) {
+    var ttId  = dot.getAttribute('data-ttid') || 'trend-tooltip';
+    var wrapId = ttId === 'trend-tooltip-r' ? 'trend-svg-wrap-r' : 'trend-svg-wrap';
+
+    function showTip() {
+      var tooltip = document.getElementById(ttId);
+      var ttVal   = document.getElementById(ttId === 'trend-tooltip-r' ? 'tt-val-r' : 'tt-val');
+      var ttDate  = document.getElementById(ttId === 'trend-tooltip-r' ? 'tt-date-r' : 'tt-date');
+      var wrap    = document.getElementById(wrapId);
+      if (!tooltip || !wrap) return;
+      var v  = dot.getAttribute('data-v');
+      var unit = dot.getAttribute('data-unit') || 'kg';
       var ts = parseInt(dot.getAttribute('data-ts'), 10);
-      var d = new Date(ts);
-      if (ttVal) ttVal.textContent = w + 'kg';
+      var d  = new Date(ts);
+      if (ttVal)  ttVal.textContent  = v + unit;
       if (ttDate) ttDate.textContent = d.toLocaleDateString('it-IT', {day:'2-digit',month:'short',year:'numeric'});
       tooltip.classList.add('show');
-      var rect = wrap.getBoundingClientRect();
+      var rect    = wrap.getBoundingClientRect();
       var dotRect = dot.getBoundingClientRect();
       var left = dotRect.left - rect.left - 60;
-      var top = dotRect.top - rect.top - 70;
+      var top  = dotRect.top  - rect.top  - 70;
       if (left < 0) left = 0;
       tooltip.style.left = left + 'px';
-      tooltip.style.top = top + 'px';
-    });
-    dot.addEventListener('mouseleave', function() { tooltip.classList.remove('show'); });
+      tooltip.style.top  = top  + 'px';
+    }
+    function hideTip() {
+      var tooltip = document.getElementById(ttId);
+      if (tooltip) tooltip.classList.remove('show');
+    }
+    dot.addEventListener('mouseenter', showTip);
+    dot.addEventListener('mouseleave', hideTip);
     dot.addEventListener('click', function() {
-      var w = dot.getAttribute('data-w');
-      var ts = parseInt(dot.getAttribute('data-ts'), 10);
-      var d = new Date(ts);
-      if (ttVal) ttVal.textContent = w + 'kg';
-      if (ttDate) ttDate.textContent = d.toLocaleDateString('it-IT', {day:'2-digit',month:'short',year:'numeric'});
-      tooltip.classList.toggle('show');
+      var tooltip = document.getElementById(ttId);
+      if (tooltip && tooltip.classList.contains('show')) { hideTip(); } else { showTip(); }
     });
   });
 }
