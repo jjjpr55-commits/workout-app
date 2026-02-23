@@ -2486,16 +2486,69 @@ function _buildTrendChart(exMap, exName) {
   html += '</div>';
   html += '</div>'; /* /trend-chart-wrap */
 
-  /* Improvement badge */
-  var firstW = entries[0].weight;
-  var lastW = entries[entries.length-1].weight;
-  var diff = lastW - firstW;
-  if (diff !== 0) {
-    html += '<div style="text-align:center;margin-bottom:16px;">';
-    html += '<span style="display:inline-flex;align-items:center;gap:6px;background:'+(diff>0?'rgba(200,255,71,.1)':'rgba(239,68,68,.08)')+';border:1px solid '+(diff>0?'rgba(200,255,71,.3)':'rgba(239,68,68,.25)')+';border-radius:99px;padding:6px 16px;font-size:11px;font-weight:700;color:'+(diff>0?'var(--lime)':'#ef4444')+';">';
-    html += (diff>0?'↑':'↓')+' '+(diff>0?'+':'')+diff.toFixed(1)+'kg da inizio — '+(diff>0?'Ottimo miglioramento!':'In calo');
-    html += '</span></div>';
-  }
+
+  /* ── Progress summary row ── */
+  var firstW   = entries[0].weight;
+  var lastW    = entries[entries.length-1].weight;
+  var diff     = Math.round((lastW - firstW) * 10) / 10;
+  var pct      = firstW > 0 ? Math.round((diff / firstW) * 1000) / 10 : 0;
+  var spanMs   = entries[entries.length-1].ts - entries[0].ts;
+  var spanDays = Math.max(1, Math.round(spanMs / 86400000));
+  var spanStr  = spanDays < 7   ? spanDays + ' giorni'
+               : spanDays < 30  ? Math.round(spanDays / 7) + ' sett.'
+               : spanDays < 365 ? Math.round(spanDays / 30) + ' mesi'
+               : (Math.round(spanDays / 365 * 10) / 10) + ' anni';
+  var isPos  = diff > 0;
+  var isFlat = diff === 0;
+  var cMain  = isFlat ? 'var(--muted)' : isPos ? '#c8ff47' : '#ef4444';
+  var bgMain = isFlat ? 'rgba(255,255,255,.04)' : isPos ? 'rgba(200,255,71,.08)' : 'rgba(239,68,68,.08)';
+  var bdMain = isFlat ? 'rgba(255,255,255,.10)' : isPos ? 'rgba(200,255,71,.28)' : 'rgba(239,68,68,.28)';
+  var arrow  = isFlat ? '\u2192' : isPos ? '\u2191' : '\u2193';
+  var sign   = diff > 0 ? '+' : '';
+  var msgTxt = isFlat ? 'Peso invariato' : isPos ? 'Progressi confermati \ud83d\udcaa' : 'In calo — spingiti oltre \ud83d\udd25';
+
+  html += '<div style="display:grid;grid-template-columns:1fr 1px 1fr 1px 1fr;align-items:center;'
+        + 'background:'+bgMain+';border:1px solid '+bdMain+';border-radius:14px;'
+        + 'padding:14px 10px 10px;margin-bottom:16px;gap:0;">';
+
+  /* col 1 — kg diff */
+  html += '<div style="text-align:center;">'
+        + '<div style="font-family:\'Barlow Condensed\',sans-serif;font-size:26px;font-weight:900;line-height:1;color:'+cMain+'">'
+        +   arrow+' '+sign+diff+'kg'
+        + '</div>'
+        + '<div style="font-size:9px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:rgba(255,255,255,.3);margin-top:4px;">variazione</div>'
+        + '</div>';
+
+  /* divider */
+  html += '<div style="width:1px;height:36px;background:rgba(255,255,255,.08);"></div>';
+
+  /* col 2 — percentage */
+  html += '<div style="text-align:center;">'
+        + '<div style="font-family:\'Barlow Condensed\',sans-serif;font-size:26px;font-weight:900;line-height:1;color:'+cMain+'">'
+        +   (isFlat ? '—' : sign+pct+'%')
+        + '</div>'
+        + '<div style="font-size:9px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:rgba(255,255,255,.3);margin-top:4px;">crescita</div>'
+        + '</div>';
+
+  /* divider */
+  html += '<div style="width:1px;height:36px;background:rgba(255,255,255,.08);"></div>';
+
+  /* col 3 — time span */
+  html += '<div style="text-align:center;">'
+        + '<div style="font-family:\'Barlow Condensed\',sans-serif;font-size:26px;font-weight:900;line-height:1;color:var(--text-sub)">'
+        +   spanStr
+        + '</div>'
+        + '<div style="font-size:9px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:rgba(255,255,255,.3);margin-top:4px;">periodo</div>'
+        + '</div>';
+
+  /* full-width message below */
+  html += '<div style="grid-column:1/-1;text-align:center;font-size:11px;font-weight:700;color:'+cMain
+        + ';border-top:1px solid rgba(255,255,255,.06);margin-top:10px;padding-top:8px;letter-spacing:.3px;">'
+        +   msgTxt
+        + '</div>';
+
+  html += '</div>';
+
 
   return html;
 }
