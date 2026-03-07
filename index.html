@@ -1390,10 +1390,16 @@ footer a { color:var(--blue); text-decoration:none; }
   opacity:0; pointer-events:none;
   transform:translateY(-8px) scale(.94);
   transition:opacity .3s ease, transform .3s cubic-bezier(.34,1.56,.64,1);
+  cursor:pointer; -webkit-user-select:none; user-select:none;
 }
 .floating-chrono.visible {
   opacity:1; pointer-events:auto;
   transform:translateY(0) scale(1);
+}
+.floating-chrono:active { opacity:.75; }
+.chrono-cancel-hint {
+  font-size:10px; font-weight:700; color:rgba(255,255,255,.3);
+  margin-left:2px;
 }
 .chrono-dot {
   width:7px; height:7px; border-radius:50%;
@@ -1865,6 +1871,7 @@ footer a { color:var(--blue); text-decoration:none; }
   <div class="chrono-dot" id="floating-chrono-dot"></div>
   <span class="chrono-session-lbl" id="floating-chrono-sid">A</span>
   <span class="chrono-time" id="floating-chrono-val">00:00</span>
+  <span class="chrono-cancel-hint">✕</span>
 </div>
 <!-- Legacy compat spans (hidden) -->
 <span id="chrono-val-a" style="display:none"></span>
@@ -2100,8 +2107,13 @@ function showToast(msg) {
 
 /* ── HISTORY HELPERS ── */
 var HIST_SK = 'wk_history_v2';
+var _BUNDLED_HISTORY = [{"date":"06/03/2026 22:57","session":"D","duration":"22 min 27 s","durationSecs":1347,"exercises":[{"name":"Machine Shoulder Press","muscle":"Shoulders · Anterior Deltoid","weight":30,"sets":4,"reps":"8-12","setsLog":[{"setIndex":1,"reps":8,"weight":30,"ts":"2026-03-06T21:34:42.813Z"},{"setIndex":2,"reps":8,"weight":30,"ts":"2026-03-06T21:34:44.500Z"},{"setIndex":3,"reps":8,"weight":30,"ts":"2026-03-06T21:34:45.320Z"},{"setIndex":4,"reps":8,"weight":30,"ts":"2026-03-06T21:34:46.105Z"}]},{"name":"Cable Low Single Arm Lateral Raise","muscle":"Shoulders · Lateral Deltoid","weight":3.5,"sets":4,"reps":"12-20","setsLog":[{"setIndex":1,"reps":12,"weight":3.5,"ts":"2026-03-06T21:34:53.540Z"},{"setIndex":2,"reps":12,"weight":3.5,"ts":"2026-03-06T21:34:54.622Z"},{"setIndex":3,"reps":12,"weight":3.5,"ts":"2026-03-06T21:34:56.307Z"},{"setIndex":4,"reps":12,"weight":3.5,"ts":"2026-03-06T21:34:57.441Z"}]},{"name":"Dumbbell Internally Rotated Rear Delt Fly","muscle":"Rear Deltoid · Rhomboids","weight":4,"sets":3,"reps":"12-15","setsLog":[{"setIndex":1,"reps":12,"weight":4,"ts":"2026-03-06T21:35:03.533Z"},{"setIndex":2,"reps":12,"weight":4,"ts":"2026-03-06T21:35:04.981Z"},{"setIndex":3,"reps":12,"weight":4,"ts":"2026-03-06T21:35:06.664Z"}]},{"name":"Cable Upright Row","muscle":"Traps · Lateral Deltoid","weight":10,"sets":3,"reps":"12-15","setsLog":[{"setIndex":1,"reps":12,"weight":10,"ts":"2026-03-06T21:35:15.657Z"},{"setIndex":2,"reps":12,"weight":10,"ts":"2026-03-06T21:35:16.988Z"},{"setIndex":3,"reps":13,"weight":10,"ts":"2026-03-06T21:36:36.112Z"}]},{"name":"Reverse Crunch Kick Up","muscle":"Lower Abs · Iliopsoas","weight":null,"sets":3,"reps":"12-15","setsLog":[{"setIndex":1,"reps":15,"weight":null,"ts":"2026-03-06T21:49:26.446Z"},{"setIndex":2,"reps":15,"weight":null,"ts":"2026-03-06T21:53:38.238Z"},{"setIndex":3,"reps":12,"weight":null,"ts":"2026-03-06T21:57:09.656Z"}]},{"name":"Weighted Forearm Plank","muscle":"Core · Transverse Abdominis","weight":null,"sets":3,"reps":"30-60s","setsLog":[{"setIndex":1,"reps":64,"weight":null,"ts":"2026-03-06T21:40:04.288Z"},{"setIndex":2,"reps":60,"weight":null,"ts":"2026-03-06T21:42:51.720Z"},{"setIndex":3,"reps":70,"weight":null,"ts":"2026-03-06T21:46:35.786Z"}]}],"score":72,"ts":1772834230285},{"date":"28/02/2026 23:48","session":"C","duration":"21 min 4 s","durationSecs":1264,"exercises":[{"name":"Dumbbell Laying Incline Row","muscle":"Lats · Rhomboids · Traps","weight":12.5,"sets":4,"reps":"8-12","setsLog":[{"setIndex":1,"reps":8,"weight":12.5,"ts":"2026-02-28T22:27:43.126Z"},{"setIndex":2,"reps":8,"weight":12.5,"ts":"2026-02-28T22:27:44.238Z"},{"setIndex":3,"reps":8,"weight":12.5,"ts":"2026-02-28T22:27:46.591Z"},{"setIndex":4,"reps":8,"weight":12.5,"ts":"2026-02-28T22:27:48.642Z"}]},{"name":"Neutral Grip Lat Pulldown","muscle":"Lats · Latissimus Dorsi","weight":45,"sets":4,"reps":"10-12","setsLog":[{"setIndex":1,"reps":10,"weight":45,"ts":"2026-02-28T22:27:36.608Z"},{"setIndex":2,"reps":10,"weight":45,"ts":"2026-02-28T22:27:38.036Z"},{"setIndex":3,"reps":10,"weight":45,"ts":"2026-02-28T22:27:38.938Z"},{"setIndex":4,"reps":10,"weight":45,"ts":"2026-02-28T22:27:40.504Z"}]},{"name":"Cable Rope Pullover","muscle":"Lats · Serratus Anterior","weight":15,"sets":3,"reps":"12-15","setsLog":[{"setIndex":1,"reps":12,"weight":15,"ts":"2026-02-28T22:27:57.967Z"},{"setIndex":2,"reps":12,"weight":15,"ts":"2026-02-28T22:27:59.280Z"},{"setIndex":3,"reps":12,"weight":15,"ts":"2026-02-28T22:28:00.148Z"}]},{"name":"Smith Machine JM Press","muscle":"Triceps · Long Head","weight":15,"sets":4,"reps":"8-12","setsLog":[{"setIndex":1,"reps":8,"weight":15,"ts":"2026-02-28T22:28:02.370Z"},{"setIndex":2,"reps":8,"weight":15,"ts":"2026-02-28T22:28:03.751Z"},{"setIndex":3,"reps":8,"weight":15,"ts":"2026-02-28T22:28:04.734Z"},{"setIndex":4,"reps":8,"weight":15,"ts":"2026-02-28T22:28:05.836Z"}]},{"name":"Estensioni Tricipiti al Cavo Monobraccio Incrociato","muscle":"Triceps · Isolation","weight":5,"sets":3,"reps":"12-15","setsLog":[{"setIndex":1,"reps":12,"weight":5,"ts":"2026-02-28T22:31:08.247Z"},{"setIndex":2,"reps":13,"weight":5,"ts":"2026-02-28T22:34:15.218Z"},{"setIndex":3,"reps":14,"weight":5,"ts":"2026-02-28T22:37:35.219Z"}]},{"name":"Decline EZ Bar Triceps Extension","muscle":"Triceps · Long and Lateral Head","weight":10,"sets":3,"reps":"10-12","setsLog":[{"setIndex":1,"reps":8,"weight":10,"ts":"2026-02-28T22:41:32.116Z"},{"setIndex":2,"reps":9,"weight":10,"ts":"2026-02-28T22:44:22.223Z"},{"setIndex":3,"reps":10,"weight":10,"ts":"2026-02-28T22:48:40.189Z"}]}],"score":80,"ts":1772318920812},{"date":"26/02/2026 23:55","session":"B","duration":"79 min 25 s","durationSecs":4765,"exercises":[{"name":"Machine Hack Squat","muscle":"Quadriceps · Glutes","weight":60,"sets":4,"reps":"8-12","setsLog":[{"setIndex":1,"reps":12,"weight":60,"ts":"2026-02-26T21:36:18.106Z"},{"setIndex":2,"reps":12,"weight":60,"ts":"2026-02-26T21:38:56.397Z"},{"setIndex":3,"reps":12,"weight":60,"ts":"2026-02-26T21:41:15.463Z"},{"setIndex":4,"reps":12,"weight":60,"ts":"2026-02-26T21:45:30.847Z"}]},{"name":"Dumbbell Romanian Deadlift","muscle":"Hamstrings · Glutes · Lower Back","weight":12.5,"sets":4,"reps":"10-12","setsLog":[{"setIndex":1,"reps":10,"weight":null,"ts":"2026-02-26T21:49:32.320Z"},{"setIndex":2,"reps":12,"weight":null,"ts":"2026-02-26T21:52:29.941Z"},{"setIndex":3,"reps":10,"weight":12.5,"ts":"2026-02-26T21:54:52.950Z"},{"setIndex":4,"reps":10,"weight":12.5,"ts":"2026-02-26T21:57:23.043Z"}]},{"name":"Dumbbell Bulgarian Split Squat","muscle":"Quads · Glutes · Balance","weight":6,"sets":3,"reps":"10/side","setsLog":[{"setIndex":1,"reps":6,"weight":null,"ts":"2026-02-26T22:01:47.900Z"},{"setIndex":2,"reps":6,"weight":6,"ts":"2026-02-26T22:05:15.660Z"},{"setIndex":3,"reps":8,"weight":6,"ts":"2026-02-26T22:05:27.049Z"},{"setIndex":4,"reps":7,"weight":6,"ts":"2026-02-26T22:08:42.778Z"}]},{"name":"Seated Leg Curl","muscle":"Hamstrings · Biceps Femoris","weight":36,"sets":4,"reps":"12-15","setsLog":[{"setIndex":1,"reps":13,"weight":36,"ts":"2026-02-26T22:24:15.274Z"},{"setIndex":2,"reps":12,"weight":36,"ts":"2026-02-26T22:27:08.218Z"},{"setIndex":3,"reps":12,"weight":36,"ts":"2026-02-26T22:30:29.777Z"},{"setIndex":4,"reps":12,"weight":36,"ts":"2026-02-26T22:55:42.579Z"}]},{"name":"Standing Machine Calf Raise","muscle":"Calves · Gastrocnemius","weight":40,"sets":4,"reps":"15-20","setsLog":[{"setIndex":1,"reps":15,"weight":40,"ts":"2026-02-26T22:12:49.990Z"},{"setIndex":2,"reps":13,"weight":40,"ts":"2026-02-26T22:15:07.080Z"},{"setIndex":3,"reps":12,"weight":40,"ts":"2026-02-26T22:17:02.944Z"},{"setIndex":4,"reps":11,"weight":40,"ts":"2026-02-26T22:19:18.442Z"}]}],"score":90,"ts":1772146543215}];
 function loadHistory() {
-  try { return JSON.parse(localStorage.getItem(HIST_SK)) || []; } catch(e) { return []; }
+  try {
+    var h = JSON.parse(localStorage.getItem(HIST_SK));
+    if (h && h.length) return h;
+    return _BUNDLED_HISTORY.slice();
+  } catch(e) { return _BUNDLED_HISTORY.slice(); }
 }
 function saveHistoryRecord(record) {
   try {
@@ -3017,6 +3029,7 @@ function resetSessionState() {
   stopSessionChrono();
   sessionStartTime = null;
   currentSession   = null;
+  clearSessionSnap();
 }
 function _updateChronoDisplay(sid, elapsed) {
   /* kept for endSessionAndSave compatibility */
@@ -3033,6 +3046,7 @@ function endSessionAndSave(sid) {
   if (!sessionActive || currentSession !== sid || sessionStartTime === null) return;
   var elapsed = Math.floor((Date.now() - sessionStartTime) / 1000);
   stopSessionChrono();
+  clearSessionSnap();
   var m = Math.floor(elapsed / 60);
   var s = elapsed % 60;
   var dur = m > 0 ? m + ' min ' + s + ' s' : s + ' s';
@@ -3788,6 +3802,7 @@ function buildAll() {
             if (cardEl) cardEl.classList.add('ex-completed');
             setTimeout(function(){ checkSessionDone(); }, 600);
           }
+          saveSessionSnap();
         });
 
         /* skip recovery */
@@ -3854,6 +3869,7 @@ function buildAll() {
           if (counters[k] === 0) deactivateFocus();
           bumpNum();
           updateCounter(k, maxSets);
+          saveSessionSnap();
         });
 
         /* PILLAR 4: weight pill toggle */
@@ -3984,15 +4000,15 @@ function buildAll() {
           var rcSel = document.querySelector('#rcex-'+k+' .rc-ex-opt.sel');
           var rcVal = rcSel ? parseInt(rcSel.getAttribute('data-secs'),10) : RECOVERY_SECS;
           maxSets = Number(s) || maxSets;
-          counters[k] = 0;
+          counters[k] = Math.min(counters[k] || 0, maxSets);
 
-          /* rebuild dots for new sets count */
+          /* rebuild dots ripristinando i dot già completati */
           var dotsEl = document.getElementById('cdots-'+k);
           if (dotsEl) {
             dotsEl.innerHTML = '';
             for (var d = 0; d < maxSets; d++) {
               var dot = document.createElement('div');
-              dot.className = 'set-dot';
+              dot.className = 'set-dot' + (d < counters[k] ? ' filled' : '');
               dot.id = 'dt-'+k+'-'+d;
               dotsEl.appendChild(dot);
             }
@@ -4009,10 +4025,9 @@ function buildAll() {
           nd.textContent = n ? '📝 '+n : '';
           nd.style.display = n ? '' : 'none';
 
-          /* un-complete on reset */
           var cardEl = document.getElementById('ctr-'+k).closest('.ex-card');
-          if (cardEl) cardEl.classList.remove('ex-completed');
-          document.getElementById('sb-'+sid).classList.remove('show');
+          if (cardEl && counters[k] < maxSets) cardEl.classList.remove('ex-completed');
+          if (counters[k] < maxSets) document.getElementById('sb-'+sid).classList.remove('show');
 
           var st = loadSt();
           if (!st[k]) st[k] = {};
@@ -4107,10 +4122,9 @@ document.getElementById('tabs').addEventListener('click', function(e) {
   if (!btn) return;
   var id = btn.getAttribute('data-tab');
 
-  /* if switching away from active session → abort chrono (no save) */
-  if (sessionActive && currentSession && id !== currentSession) {
-    resetSessionState();
-  }
+  /* Non interrompere mai la sessione cambiando tab:
+     l'utente usa la ✕ sulla pillola per annullare */
+  // if (sessionActive && currentSession && id !== currentSession) { resetSessionState(); }
 
   document.querySelectorAll('.tab').forEach(function(t){ t.classList.remove('on'); });
   document.querySelectorAll('.panel').forEach(function(p){ p.classList.remove('on'); });
@@ -4187,7 +4201,119 @@ document.getElementById('ibc').addEventListener('click', function() {
   if (iOS && !standalone && !closed) document.getElementById('ib').classList.add('show');
 })();
 
+/* ── SESSION SNAP ── */
+var SESS_SNAP_SK = 'wk_sess_snap';
+function saveSessionSnap() {
+  try {
+    if (!sessionActive || !currentSession) return;
+    var snap = { sid:currentSession, startTime:sessionStartTime, ts:Date.now(), counters:{}, setsLog:{}, repsTracker:{} };
+    DATA[currentSession].forEach(function(ex,i){
+      var k=currentSession+'-'+i;
+      snap.counters[k]=counters[k]||0;
+      if(_setsLog[k]&&_setsLog[k].length) snap.setsLog[k]=_setsLog[k].slice();
+      if(_repsTracker[k]!==undefined) snap.repsTracker[k]=_repsTracker[k];
+    });
+    localStorage.setItem(SESS_SNAP_SK, JSON.stringify(snap));
+  } catch(e){}
+}
+function clearSessionSnap(){ try{ localStorage.removeItem(SESS_SNAP_SK); }catch(e){} }
+
 buildAll();
+
+/* ── PRE-POPOLA KG DAL ULTIMO STORICO (solo se non già salvati) ── */
+(function() {
+  try {
+    var st = loadSt();
+    var defaults = {"a-0":{"weight":"35"},"a-1":{"weight":"20"},"a-2":{"weight":"15"},"a-3":{"weight":"5"},"a-4":{"weight":"7.5"},"a-5":{"weight":"10"},"b-0":{"weight":"60"},"b-1":{"weight":"12.5"},"b-2":{"weight":"6"},"b-3":{"weight":"36"},"b-4":{"weight":"40"},"c-0":{"weight":"12.5"},"c-1":{"weight":"45"},"c-2":{"weight":"15"},"c-3":{"weight":"15"},"c-4":{"weight":"5"},"c-5":{"weight":"10"},"d-0":{"weight":"30"},"d-1":{"weight":"3.5"},"d-2":{"weight":"4"},"d-3":{"weight":"10"}};
+    var changed = false;
+    Object.keys(defaults).forEach(function(k) {
+      if (!st[k] || !st[k].weight) {
+        if (!st[k]) st[k] = {};
+        st[k].weight = defaults[k].weight;
+        changed = true;
+        /* aggiorna anche la pill visiva */
+        var wvEl = document.getElementById('wv-'+k);
+        if (wvEl) wvEl.textContent = defaults[k].weight;
+      }
+    });
+    if (changed) saveSt(st);
+  } catch(e) {}
+})();
+
+/* ── ANNULLA SESSIONE — tap sulla pillola del cronometro ── */
+document.getElementById('floating-chrono').addEventListener('click', function() {
+  if (!sessionActive) return;
+  showConfirm('Annullare la sessione in corso?<br>I set completati andranno persi.', function() {
+    var sid = currentSession;
+    if (sid && DATA[sid]) {
+      DATA[sid].forEach(function(ex,i){
+        var k=sid+'-'+i;
+        counters[k]=0;
+        delete _setsLog[k];
+        delete _repsTracker[k];
+        stopRecoveryTimer(k);
+        var maxS=Number((loadSt()[k]||{}).sets)||ex.sets;
+        updateCounter(k,maxS);
+        var ctrEl=document.getElementById('ctr-'+k);
+        if(ctrEl) ctrEl.closest('.ex-card').classList.remove('ex-completed');
+        var chips=document.getElementById('live-chips-'+k);
+        if(chips) chips.innerHTML='';
+        var rdw=document.getElementById('rdw-'+k);
+        if(rdw) rdw.style.opacity='.35';
+      });
+      document.getElementById('sb-'+sid).classList.remove('show');
+    }
+    stopSessionChrono();
+    sessionStartTime=null; currentSession=null;
+    clearSessionSnap();
+    updateResetBar();
+    deactivateFocus();
+    showToast('Sessione annullata');
+  });
+});
+
+/* ── RIPRISTINO SESSIONE dopo ricarico iOS (snap < 10 min) ── */
+(function(){
+  try {
+    var snap = JSON.parse(localStorage.getItem(SESS_SNAP_SK)||'null');
+    if (!snap||!snap.sid||!snap.startTime||!snap.counters) return;
+    if (Date.now()-snap.ts > 600000) { localStorage.removeItem(SESS_SNAP_SK); return; }
+    var sid=snap.sid;
+    if (!DATA[sid]) return;
+    Object.keys(snap.counters).forEach(function(k){ counters[k]=snap.counters[k]||0; });
+    Object.keys(snap.setsLog||{}).forEach(function(k){ _setsLog[k]=snap.setsLog[k]; });
+    Object.keys(snap.repsTracker||{}).forEach(function(k){ _repsTracker[k]=parseInt(snap.repsTracker[k])||10; });
+    DATA[sid].forEach(function(ex,i){
+      try {
+        var k=sid+'-'+i;
+        var done=counters[k]||0;
+        var maxS=Number((loadSt()[k]||{}).sets)||ex.sets;
+        if (done<=0) return;
+        updateCounter(k,maxS);
+        _updateLiveChips(k);
+        var dotsEl=document.getElementById('cdots-'+k);
+        if(dotsEl) dotsEl.querySelectorAll('.set-dot').forEach(function(d,di){ d.classList.toggle('filled',di<done); });
+        var rdw=document.getElementById('rdw-'+k);
+        if(rdw) rdw.style.opacity='1';
+        if(done>=maxS){ var ctrEl=document.getElementById('ctr-'+k); if(ctrEl) ctrEl.closest('.ex-card').classList.add('ex-completed'); }
+      } catch(e2){}
+    });
+    document.querySelectorAll('.tab').forEach(function(t){ t.classList.remove('on'); });
+    document.querySelectorAll('.panel').forEach(function(p){ p.classList.remove('on'); });
+    var tb=document.querySelector('[data-tab="'+sid+'"]');
+    var pb=document.getElementById('panel-'+sid);
+    if(tb) tb.classList.add('on');
+    if(pb) pb.classList.add('on');
+    currentSession=sid; sessionActive=true; sessionStartTime=snap.startTime;
+    requestWakeLock();
+    var elapsed=Math.floor((Date.now()-snap.startTime)/1000);
+    _updateFloatingChrono(sid,elapsed);
+    _chronoInterval=setInterval(function(){
+      _updateFloatingChrono(sid,Math.floor((Date.now()-sessionStartTime)/1000));
+    },1000);
+    showToast('↩ Sessione ripristinata');
+  } catch(e){ try{ localStorage.removeItem(SESS_SNAP_SK); }catch(e2){} }
+})();
 
 /* ── RESET DATI DEMO (una volta sola al primo avvio di questa versione) ──
    Cancella tutto ciò che era salvato con i dati finti delle versioni precedenti.
